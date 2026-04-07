@@ -1,1 +1,0 @@
-{"mcpServers": {"ds2api": {"command": "npx", "args": ["ds2api-mcp-claude"], "env": {"DS2API_BASE_URL": "http://127.0.0.1:5001"}}}, "ds2api": {"baseURL": "http://127.0.0.1:5001", "apiKey": "", "defaultModel": "deepseek-chat", "maxTokens": 16384, "thinking": false, "preferredEngine": "auto"}}
