@@ -1,0 +1,1 @@
+{"name": "ds2api-mcp-vscode", "version": "1.0.0", "private": true, "scripts": {"vscode:prepublish": "npm run compile", "compile": "tsc -p ./", "watch": "tsc -watch -p ./", "package": "vsce package"}, "devDependencies": {"@types/vscode": "^1.97.0", "@types/node": "^22.13.9", "typescript": "^5.7.3", "@vscode/vsce": "^3.4.0"}}

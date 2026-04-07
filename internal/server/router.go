@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	"ds2api/internal/deepseek"
+	"ds2api/internal/mcp"
 	"ds2api/internal/qwen"
 	"ds2api/internal/webui"
 )
@@ -86,6 +88,7 @@ func NewApp() *App {
 		admin.RegisterRoutes(ar, adminHandler)
 	})
 	webui.RegisterRoutes(r, webuiHandler)
+	registerMCPRoutes(r, dsClient, qwenClient, store)
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
 		if strings.HasPrefix(req.URL.Path, "/admin/") && webuiHandler.HandleAdminFallback(w, req) {
 			return
@@ -120,4 +123,60 @@ func WriteUnhandledError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"type": "api_error", "message": "Internal Server Error", "detail": err.Error()}})
+}
+
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(data)
+}
+
+func registerMCPRoutes(r *chi.Mux, ds *deepseek.Client, qw *qwen.Client, store *config.Store) {
+	registry := mcp.NewPluginRegistry(store, ds, qw)
+
+	baseURL := "http://127.0.0.1:" + strings.TrimSpace(os.Getenv("PORT"))
+	if baseURL == "http://127.0.0.1:" {
+		baseURL = "http://127.0.0.1:5001"
+	}
+
+	openclawCfg := mcp.DefaultOpenClawConfig()
+	claudeCodeCfg := mcp.DefaultClaudeCodeConfig()
+	jetbrainsCfg := mcp.DefaultJetBrainsConfig()
+	opencodeCfg := mcp.DefaultOpenCodeConfig()
+	vscodeCfg := mcp.DefaultVSCodeConfig()
+
+	mcp.RegisterOpenClaw(r, registry.Server(), openclawCfg)
+	mcp.RegisterClaudeCode(r, registry.Server(), claudeCodeCfg)
+	mcp.RegisterJetBrains(r, registry.Server(), jetbrainsCfg)
+	mcp.RegisterOpenCode(r, registry.Server(), opencodeCfg)
+	mcp.RegisterVSCode(r, registry.Server(), vscodeCfg)
+
+	r.Get("/mcp/guides", func(w http.ResponseWriter, _ *http.Request) {
+		guides := mcp.AllBuiltinGuides(baseURL)
+		writeJSON(w, http.StatusOK, map[string]any{"platforms": guides})
+	})
+
+	r.Get("/mcp/guide/{platform}", func(w http.ResponseWriter, req *http.Request) {
+		platform := chi.URLParam(req, "platform")
+		guide, err := mcp.BuiltinGuide(platform, baseURL)
+		if err != nil {
+			writeJSON(w, http.StatusNotFound, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"platform": platform, "guide": guide})
+	})
+
+	config.Logger.Info("[MCP] plugin bridge initialized",
+		"platforms", len(mcp.AllBuiltinPlatforms()),
+		"transport", mcp.MCPTransport(),
+	)
+
+	if mcp.IsMCPMode() && mcp.MCPTransport() == "stdio" {
+		go func() {
+			ctx := context.Background()
+			if err := registry.RunStdioMode(ctx); err != nil {
+				config.Logger.Error("[MCP] stdio mode error", "error", err)
+			}
+		}()
+	}
 }

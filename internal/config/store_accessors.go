@@ -168,3 +168,7 @@ func (s *Store) AutoDeleteSessions() bool {
 	defer s.mu.RUnlock()
 	return s.cfg.AutoDelete.Sessions
 }
+
+func GetEnv(key string) string {
+	return strings.TrimSpace(os.Getenv(key))
+}

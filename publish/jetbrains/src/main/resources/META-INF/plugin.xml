@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+    <id>com.fssl168.ds2api-mcp</id>
+    <name>ds2api MCP Bridge</name>
+    <vendor email="fssl168@gmail.com" url="https://github.com/fssl168/ds2api">fssl168</vendor>
+    <description><![CDATA[
+<p>Connect <strong>DeepSeek</strong> & <strong>Qwen (通义千问)</strong> AI models to JetBrains IDEs via Model Context Protocol.</p>
+<ul>
+<li>10 AI models (DeepSeek + Qwen)</li>
+<li>5 MCP tools: chat, list_models, get_status, get_pool_status, embeddings</li>
+<li>Zero-config: auto-connects to ds2api at localhost:5001</li>
+</ul>
+<p>Requires ds2api running locally or accessible via network.</p>
+    ]]></description>
+    <depends>com.intellij.modules.platform</depends>
+    <idea-version since-build="243.0"/>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable parentId="tools" instance="ds2api.mcp.Ds2ApiMcpConfigurable"
+                             id="ds2api.mcp.settings" displayName="ds2api MCP Bridge"/>
+        <notificationGroup id="ds2api.mcp" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action id="ds2api.mcp.showStatus"
+                class="ds2api.mcp.ShowStatusAction"
+                text="ds2api: Show Connection Status"
+                description="Check ds2api MCP server connection status">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        <action id="ds2api.mcp.listModels"
+                class="ds2api.mcp.ListModelsAction"
+                text="ds2api: List Available Models"
+                description="List all AI models available via ds2api">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
