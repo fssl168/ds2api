@@ -1,7 +1,11 @@
 package admin
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
+
+	"ds2api/internal/config"
 )
 
 type Handler struct {
@@ -9,6 +13,14 @@ type Handler struct {
 	Pool  PoolController
 	DS    DeepSeekCaller
 	QW    QwenCaller
+}
+
+func audit(action, detail string, r *http.Request) {
+	config.Logger.Info("[admin:audit]",
+		"action", action,
+		"detail", detail,
+		"remote", r.RemoteAddr,
+	)
 }
 
 func RegisterRoutes(r chi.Router, h *Handler) {

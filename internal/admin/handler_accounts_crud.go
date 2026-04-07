@@ -103,6 +103,7 @@ func (h *Handler) addAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Pool.Reset()
+	audit("add_account", fmt.Sprintf("account added (id=%s)", acc.Identifier()), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "total_accounts": len(h.Store.Snapshot().Accounts)})
 }
 
@@ -130,5 +131,6 @@ func (h *Handler) deleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Pool.Reset()
+	audit("delete_account", fmt.Sprintf("account deleted (id=%s)", identifier), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "total_accounts": len(h.Store.Snapshot().Accounts)})
 }

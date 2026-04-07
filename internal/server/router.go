@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -65,6 +66,8 @@ func NewApp() *App {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors)
+	rl := newRateLimiter(time.Minute, 120)
+	r.Use(rl.Middleware())
 	r.Use(timeout(0))
 
 	healthzHandler := func(w http.ResponseWriter, _ *http.Request) {
@@ -106,9 +109,91 @@ func timeout(d time.Duration) func(http.Handler) http.Handler {
 	return middleware.Timeout(d)
 }
 
+type rateLimiter struct {
+	mu      sync.Mutex
+	clients map[string][]time.Time
+	window  time.Duration
+	limit   int
+}
+
+func newRateLimiter(window time.Duration, limit int) *rateLimiter {
+	rl := &rateLimiter{
+		clients: make(map[string][]time.Time),
+		window:  window,
+		limit:   limit,
+	}
+	go rl.cleanup()
+	return rl
+}
+
+func (rl *rateLimiter) Middleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := r.RemoteAddr
+			if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+				ip = strings.TrimSpace(strings.Split(fwd, ",")[0])
+			}
+			if !rl.allow(ip) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+				_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"type": "rate_limit_error", "message": "Rate limit exceeded"}})
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (rl *rateLimiter) allow(ip string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	now := time.Now()
+	times := rl.clients[ip]
+	var valid []time.Time
+	for _, t := range times {
+		if now.Sub(t) < rl.window {
+			valid = append(valid, t)
+		}
+	}
+	if len(valid) >= rl.limit {
+		return false
+	}
+	valid = append(valid, now)
+	rl.clients[ip] = valid
+	return true
+}
+
+func (rl *rateLimiter) cleanup() {
+	ticker := time.NewTicker(rl.window)
+	for range ticker.C {
+		rl.mu.Lock()
+		now := time.Now()
+		for ip, times := range rl.clients {
+			var valid []time.Time
+			for _, t := range times {
+				if now.Sub(t) < rl.window {
+					valid = append(valid, t)
+				}
+			}
+			if len(valid) == 0 {
+				delete(rl.clients, ip)
+			} else {
+				rl.clients[ip] = valid
+			}
+		}
+		rl.mu.Unlock()
+	}
+}
+
 func cors(next http.Handler) http.Handler {
+	allowedOrigin := strings.TrimSpace(os.Getenv("CORS_ORIGIN"))
+	if allowedOrigin == "" {
+		allowedOrigin = "*"
+	} else {
+		config.Logger.Warn("[security] CORS origin restricted", "origin", allowedOrigin)
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, X-Ds2-Target-Account, X-Vercel-Protection-Bypass")
 		if r.Method == http.MethodOptions {
@@ -120,9 +205,10 @@ func cors(next http.Handler) http.Handler {
 }
 
 func WriteUnhandledError(w http.ResponseWriter, err error) {
+	config.Logger.Error("[unhandled]", "error", err)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
-	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"type": "api_error", "message": "Internal Server Error", "detail": err.Error()}})
+	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"type": "api_error", "message": "Internal Server Error"}})
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {

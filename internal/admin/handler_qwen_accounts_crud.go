@@ -80,6 +80,7 @@ func (h *Handler) addQwenAccount(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"detail": err.Error()})
 		return
 	}
+	audit("add_qwen_account", fmt.Sprintf("qwen account added (label=%s)", req.Label), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "total": len(h.Store.Snapshot().QwenAccounts)})
 }
 
@@ -107,6 +108,7 @@ func (h *Handler) deleteQwenAccount(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]any{"detail": err.Error()})
 		return
 	}
+	audit("delete_qwen_account", fmt.Sprintf("qwen account deleted (label=%s)", label), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "total": len(h.Store.Snapshot().QwenAccounts)})
 }
 

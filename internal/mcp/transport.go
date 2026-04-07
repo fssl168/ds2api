@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -104,6 +106,7 @@ func SSETransportHandler(srv *Server) http.HandlerFunc {
 			return
 		}
 
+		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 		body, _ := io.ReadAll(r.Body)
 		var batchReq []JSONRPCRequest
 		if err := json.Unmarshal(body, &batchReq); err == nil && len(batchReq) > 0 {
@@ -191,10 +194,8 @@ func deleteSession(id string) {
 
 func newSessionID() string {
 	b := make([]byte, 16)
-	for i := range b {
-		b[i] = "abcdefghijklmnopqrstuvwxyz0123456789"[i%36]
-	}
-	return string(b)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func ReadSSEMessages(r io.Reader) ([]json.RawMessage, error) {

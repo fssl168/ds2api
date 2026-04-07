@@ -150,7 +150,7 @@ func ParseStandaloneToolCallsDetailed(text string, availableToolNames []string) 
 	return result
 }
 
-func filterToolCallsDetailed(parsed []ParsedToolCall, availableToolNames []string) ([]ParsedToolCall, []string) {
+func filterToolCallsDetailed(parsed []ParsedToolCall, _ []string) ([]ParsedToolCall, []string) {
 	out := make([]ParsedToolCall, 0, len(parsed))
 	for _, tc := range parsed {
 		if tc.Name == "" {

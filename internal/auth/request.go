@@ -233,9 +233,14 @@ func extractCallerToken(req *http.Request) string {
 	// Gemini AI Studio compatibility: allow query key fallback only when no
 	// header-based credential is present.
 	if key := strings.TrimSpace(req.URL.Query().Get("key")); key != "" {
+		config.Logger.Warn("[security] API key received via query parameter (may be logged by proxies)", "source", "query:key")
 		return key
 	}
-	return strings.TrimSpace(req.URL.Query().Get("api_key"))
+	if key := strings.TrimSpace(req.URL.Query().Get("api_key")); key != "" {
+		config.Logger.Warn("[security] API key received via query parameter (may be logged by proxies)", "source", "query:api_key")
+		return key
+	}
+	return ""
 }
 
 func callerTokenID(token string) string {
