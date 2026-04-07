@@ -64,3 +64,6 @@ publish/
 
 # Trae IDE
 .trae/
+
+# npm packages (local only, not uploaded)
+packages/
