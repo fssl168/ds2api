@@ -119,7 +119,7 @@ You have access to ds2api MCP tools that provide DeepSeek and Qwen AI models.
 | Fast responses | qwen-flash |
 
 ## Usage
-When user asks about AI models, code explanation, or needs LLM assistance:
+When user asks about available models, code explanation, or needs language model assistance:
 1. Use list_models to show available options
 2. Use chat with appropriate model for the task
 3. For Chinese language tasks, prefer Qwen models

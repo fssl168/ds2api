@@ -455,7 +455,7 @@ func TestParseToolCallsWithUnquotedKeys(t *testing.T) {
 
 func TestParseToolCallsWithInvalidBackslashes(t *testing.T) {
 	// DeepSeek sometimes outputs Windows paths with single backslashes in JSON strings
-	// Note: using raw string to simulate what AI actually sends in the stream
+	// Note: using raw string to simulate model output with unescaped backslashes in stream
 	text := `好的，执行以下命令：{"name": "execute_command", "input": "{\"command\": \"cd D:\git_codes && dir\"}"}`
 	availableTools := []string{"execute_command"}
 
