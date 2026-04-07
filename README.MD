@@ -13,7 +13,7 @@
 
 语言 / Language: [中文](README.MD) | [English](README.en.md)
 
-> **本项目基于 [DeepSeek2API (ds2API)](https://github.com/iidamie/deepseek2api) 原作二次开发，原作者 **iidamie**。**
+> **本项目基于 [DS2API)](https://github.com/CJackHwang/ds2api) 原作二次开发，原作者 **CJackHwang**。**
 >
 > ds2API 原版核心能力（DeepSeek 多账号池、PoW WASM、OpenAI 兼容接口）保留并增强，新增通义千问引擎、MCP 桥接层、多平台插件客户端等扩展功能。
 
@@ -328,8 +328,8 @@ MCP 桥接层已通过 **17/17** 全项测试（initialize / tools-list / ping /
 
 ## 致谢
 
-- **[iidamie/deepseek2api](https://github.com/iidamie/deepseek2api)** — 本项目基于 ds2API 原作二次开发
-- **[LLM-Red-Team/deepseek-free-api](https://github.com/LLM-Red-Team/deepseek-free-api)** — 原始逆向研究基础
+- **[CJackHwang/ds2api](https://github.com/CJackHwang/ds2api)** — 本项目基于 ds2API 原作二次开发
+- **[LLM-Red-Team/qwen-free-api](https://github.com/LLM-Red-Team/qwen-free-api)** — 原始逆向研究基础
 
 ## License
 
