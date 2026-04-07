@@ -144,11 +144,29 @@
         "envModeRiskDesc": "检测到 DS2API_CONFIG_JSON/CONFIG_JSON。若未开启 DS2API_ENV_WRITEBACK，管理台改动仅在内存生效，重启可能丢失。",
         "envModeWritebackPendingTitle": "环境变量模式 + 自动持久化已开启（等待落盘）",
         "envModeWritebackActiveTitle": "环境变量模式 + 自动持久化已生效",
-        "envModeWritebackDesc": "程序会自动创建/写入配置文件并在后续切换为文件模式。当前持久化路径：{path}"
+        "envModeWritebackDesc": "程序会自动创建/写入配置文件并在后续切换为文件模式。当前持久化路径：{path}",
+        "qwenAccountsTitle": "通义千问账号",
+        "qwenAccountsDesc": "管理通义千问 (Qwen) 账号池（ticket 格式）",
+        "addQwenAccount": "添加千问账号",
+        "noQwenAccounts": "未找到千问账号",
+        "qwenTotal": "{count} 个千问账号",
+        "modalAddQwenTitle": "添加通义千问账号",
+        "qwenTicketLabel": "Ticket",
+        "qwenLabelOptional": "标签 (可选)",
+        "qwenLabelPlaceholder": "例如: qwen-account-1",
+        "qwenLabelHint": "留空则自动根据 ticket 生成标签",
+        "addQwenAction": "添加千问账号",
+        "qwenTestSuccess": "千问账号验证通过"
     },
     "apiTester": {
         "defaultMessage": "你好，请用一句话介绍你自己。",
         "models": {
+            "qwenPlus": "通义千问 Plus (Qwen3-Plus)",
+            "qwenMax": "通义千问 Max (Qwen3-Max)",
+            "qwenCoder": "通义千问 Coder (Qwen3-Coder)",
+            "qwenFlash": "通义千问 Flash (Qwen3-Flash)",
+            "qwen35Plus": "通义千问 3.5 Plus (Qwen3.5-Plus)",
+            "qwen35Flash": "通义千问 3.5 Flash (Qwen3.5-Flash)",
             "chat": "非思考模型",
             "reasoner": "思考模型",
             "chatSearch": "非思考模型 (带搜索)",
@@ -172,7 +190,8 @@
         "reasoningTrace": "思维链过程",
         "generating": "正在生成响应...",
         "enterMessage": "输入消息...",
-        "adminConsoleLabel": "DeepSeek 管理员界面"
+        "adminConsoleLabel": "DeepSeek 管理员界面",
+        "qwenConsoleLabel": "通义千问 WebUI"
     },
     "batchImport": {
         "templates": {
@@ -191,6 +210,10 @@
             "keysOnly": {
                 "name": "仅 API 密钥",
                 "desc": "仅添加 API 访问密钥"
+            },
+            "qwenOnly": {
+                "name": "仅千问账号",
+                "desc": "批量导入通义千问 (Qwen) ticket 账号"
             }
         },
         "enterJson": "请输入 JSON 配置内容",
@@ -210,7 +233,8 @@
         "applyConfig": "应用配置",
         "importing": "正在导入...",
         "importComplete": "导入操作已完成",
-        "importSummary": "成功导入了 {keys} 个 API 密钥，并更新了 {accounts} 个账号。"
+        "importSummary": "成功导入了 {keys} 个 API 密钥，并更新了 {accounts} 个账号。",
+        "qwenAccountsImported": ", {count} 个千问账号"
     },
     "settings": {
         "loadFailed": "加载设置失败",

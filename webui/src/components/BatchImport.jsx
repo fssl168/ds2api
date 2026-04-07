@@ -22,6 +22,10 @@ export default function BatchImport({ onRefresh, onMessage, authFetch }) {
                     { email: "user2@example.com", password: "password2", token: "" },
                     { mobile: "+8613800138001", password: "password3", token: "" }
                 ],
+                qwen_accounts: [
+                    { ticket: "your-qwen-ticket-1", label: "qwen-account-1" },
+                    { ticket: "your-qwen-ticket-2", label: "qwen-account-2" }
+                ],
                 claude_model_mapping: {
                     fast: "deepseek-chat",
                     slow: "deepseek-reasoner"
@@ -58,6 +62,17 @@ export default function BatchImport({ onRefresh, onMessage, authFetch }) {
             config: {
                 keys: ["key-1", "key-2", "key-3"]
             }
+        },
+        qwen_only: {
+            name: t('batchImport.templates.qwenOnly.name'),
+            desc: t('batchImport.templates.qwenOnly.desc'),
+            config: {
+                keys: ["your-api-key"],
+                qwen_accounts: [
+                    { ticket: "1ogROHqapzX0CcdoyjQj$klhtV2M3wGtaHs5PPt9Kx_F0ty14Q2igUFFPW4ybaNzpf8Gz1g_Byns0", label: "qwen-account-1" },
+                    { ticket: "another-ticket-string-here", label: "qwen-account-2" }
+                ]
+            }
         }
     }
 
@@ -86,7 +101,7 @@ export default function BatchImport({ onRefresh, onMessage, authFetch }) {
             const data = await res.json()
             if (res.ok) {
                 setResult(data)
-                onMessage('success', t('batchImport.importSuccess', { keys: data.imported_keys, accounts: data.imported_accounts }))
+                onMessage('success', t('batchImport.importSuccess', { keys: data.imported_keys, accounts: data.imported_accounts, qwenAccounts: data.imported_qwen_accounts }))
                 onRefresh()
             } else {
                 onMessage('error', data.detail || t('messages.importFailed'))
@@ -222,6 +237,11 @@ export default function BatchImport({ onRefresh, onMessage, authFetch }) {
                                 </h4>
                                 <p className="text-sm opacity-80 mt-1">
                                     {t('batchImport.importSummary', { keys: result.imported_keys, accounts: result.imported_accounts })}
+                                    {result.imported_qwen_accounts > 0 && (
+                                        <span className="ml-2 text-primary">
+                                            {t('batchImport.qwenAccountsImported', { count: result.imported_qwen_accounts })}
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                         </div>

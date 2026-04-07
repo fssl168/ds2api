@@ -20,6 +20,9 @@ func (c Config) MarshalJSON() ([]byte, error) {
 	if len(c.Accounts) > 0 {
 		m["accounts"] = c.Accounts
 	}
+	if len(c.QwenAccounts) > 0 {
+		m["qwen_accounts"] = c.QwenAccounts
+	}
 	if len(c.ClaudeMapping) > 0 {
 		m["claude_mapping"] = c.ClaudeMapping
 	}
@@ -68,6 +71,10 @@ func (c *Config) UnmarshalJSON(b []byte) error {
 			}
 		case "accounts":
 			if err := json.Unmarshal(v, &c.Accounts); err != nil {
+				return fmt.Errorf("invalid field %q: %w", k, err)
+			}
+		case "qwen_accounts":
+			if err := json.Unmarshal(v, &c.QwenAccounts); err != nil {
 				return fmt.Errorf("invalid field %q: %w", k, err)
 			}
 		case "claude_mapping":
@@ -130,6 +137,7 @@ func (c Config) Clone() Config {
 	clone := Config{
 		Keys:           slices.Clone(c.Keys),
 		Accounts:       slices.Clone(c.Accounts),
+		QwenAccounts:   slices.Clone(c.QwenAccounts),
 		ClaudeMapping:  cloneStringMap(c.ClaudeMapping),
 		ClaudeModelMap: cloneStringMap(c.ClaudeModelMap),
 		ModelAliases:   cloneStringMap(c.ModelAliases),

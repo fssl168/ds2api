@@ -144,11 +144,29 @@
         "envModeRiskDesc": "Detected DS2API_CONFIG_JSON/CONFIG_JSON. If DS2API_ENV_WRITEBACK is not enabled, Admin UI edits are in-memory only and may be lost after restart.",
         "envModeWritebackPendingTitle": "Env mode + auto-persistence enabled (pending file handoff)",
         "envModeWritebackActiveTitle": "Env mode + auto-persistence active",
-        "envModeWritebackDesc": "The app will auto-create/write the config file and transition to file-backed mode. Current persistence path: {path}"
+        "envModeWritebackDesc": "The app will auto-create/write the config file and transition to file-backed mode. Current persistence path: {path}",
+        "qwenAccountsTitle": "Qwen Accounts",
+        "qwenAccountsDesc": "Manage Qwen (Tongyi) account pool (ticket format)",
+        "addQwenAccount": "Add Qwen Account",
+        "noQwenAccounts": "No Qwen accounts found",
+        "qwenTotal": "{count} Qwen account(s)",
+        "modalAddQwenTitle": "Add Qwen Account",
+        "qwenTicketLabel": "Ticket",
+        "qwenLabelOptional": "Label (optional)",
+        "qwenLabelPlaceholder": "e.g. qwen-account-1",
+        "qwenLabelHint": "Auto-generated from ticket if left empty",
+        "addQwenAction": "Add Qwen Account",
+        "qwenTestSuccess": "Qwen account verified"
     },
     "apiTester": {
         "defaultMessage": "Hello, please introduce yourself in one sentence.",
         "models": {
+            "qwenPlus": "Qwen Plus (Qwen3-Plus)",
+            "qwenMax": "Qwen Max (Qwen3-Max)",
+            "qwenCoder": "Qwen Coder (Qwen3-Coder)",
+            "qwenFlash": "Qwen Flash (Qwen3-Flash)",
+            "qwen35Plus": "Qwen 3.5 Plus (Qwen3.5-Plus)",
+            "qwen35Flash": "Qwen 3.5 Flash (Qwen3.5-Flash)",
             "chat": "Non-reasoning model",
             "reasoner": "Reasoning model",
             "chatSearch": "Non-reasoning model (with search)",
@@ -172,7 +190,8 @@
         "reasoningTrace": "Reasoning Trace",
         "generating": "Generating response...",
         "enterMessage": "Enter a message...",
-        "adminConsoleLabel": "DeepSeek admin console"
+        "adminConsoleLabel": "DeepSeek admin console",
+        "qwenConsoleLabel": "Qwen WebUI"
     },
     "batchImport": {
         "templates": {
@@ -191,6 +210,10 @@
             "keysOnly": {
                 "name": "API keys only",
                 "desc": "Add API access keys only"
+            },
+            "qwenOnly": {
+                "name": "Qwen accounts only",
+                "desc": "Batch import Qwen (Tongyi) ticket accounts"
             }
         },
         "enterJson": "Please provide JSON configuration content.",
@@ -210,7 +233,8 @@
         "applyConfig": "Apply config",
         "importing": "Importing...",
         "importComplete": "Import complete",
-        "importSummary": "Imported {keys} API keys and updated {accounts} accounts."
+        "importSummary": "Imported {keys} API keys and updated {accounts} accounts.",
+        "qwenAccountsImported": ", {count} Qwen accounts"
     },
     "settings": {
         "loadFailed": "Failed to load settings.",

@@ -18,6 +18,7 @@ import (
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	"ds2api/internal/deepseek"
+	"ds2api/internal/qwen"
 	"ds2api/internal/webui"
 )
 
@@ -26,6 +27,7 @@ type App struct {
 	Pool     *account.Pool
 	Resolver *auth.Resolver
 	DS       *deepseek.Client
+	QW       *qwen.Client
 	Router   http.Handler
 }
 
@@ -37,16 +39,22 @@ func NewApp() *App {
 		return dsClient.Login(ctx, acc)
 	})
 	dsClient = deepseek.NewClient(store, resolver)
+	qwenClient := qwen.NewClient(store)
+	if err := qwenClient.Preload(context.Background()); err != nil {
+		config.Logger.Warn("[QWEN] preload failed", "error", err)
+	} else {
+		config.Logger.Info("[QWEN] client initialized", "tickets", len(qwenClient.Tickets()))
+	}
 	if err := dsClient.PreloadPow(context.Background()); err != nil {
 		config.Logger.Warn("[WASM] preload failed", "error", err)
 	} else {
 		config.Logger.Info("[WASM] module preloaded", "path", config.WASMPath())
 	}
 
-	openaiHandler := &openai.Handler{Store: store, Auth: resolver, DS: dsClient}
+	openaiHandler := &openai.Handler{Store: store, Auth: resolver, DS: dsClient, QW: qwenClient}
 	claudeHandler := &claude.Handler{Store: store, Auth: resolver, DS: dsClient}
 	geminiHandler := &gemini.Handler{Store: store, Auth: resolver, DS: dsClient}
-	adminHandler := &admin.Handler{Store: store, Pool: pool, DS: dsClient}
+	adminHandler := &admin.Handler{Store: store, Pool: pool, DS: dsClient, QW: qwenClient}
 	webuiHandler := webui.NewHandler()
 
 	r := chi.NewRouter()
@@ -85,7 +93,7 @@ func NewApp() *App {
 		http.NotFound(w, req)
 	})
 
-	return &App{Store: store, Pool: pool, Resolver: resolver, DS: dsClient, Router: r}
+	return &App{Store: store, Pool: pool, Resolver: resolver, DS: dsClient, QW: qwenClient, Router: r}
 }
 
 func timeout(d time.Duration) func(http.Handler) http.Handler {

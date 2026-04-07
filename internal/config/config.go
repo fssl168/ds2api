@@ -3,6 +3,7 @@ package config
 type Config struct {
 	Keys             []string          `json:"keys,omitempty"`
 	Accounts         []Account         `json:"accounts,omitempty"`
+	QwenAccounts     []QwenAccount     `json:"qwen_accounts,omitempty"`
 	ClaudeMapping    map[string]string `json:"claude_mapping,omitempty"`
 	ClaudeModelMap   map[string]string `json:"claude_model_mapping,omitempty"`
 	ModelAliases     map[string]string `json:"model_aliases,omitempty"`
@@ -22,6 +23,11 @@ type Account struct {
 	Mobile   string `json:"mobile,omitempty"`
 	Password string `json:"password,omitempty"`
 	Token    string `json:"token,omitempty"`
+}
+
+type QwenAccount struct {
+	Ticket string `json:"ticket"`
+	Label  string `json:"label,omitempty"`
 }
 
 func (c *Config) ClearAccountTokens() {

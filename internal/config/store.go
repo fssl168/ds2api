@@ -130,6 +130,18 @@ func (s *Store) Accounts() []Account {
 	return slices.Clone(s.cfg.Accounts)
 }
 
+func (s *Store) QwenTickets() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	tickets := make([]string, 0, len(s.cfg.QwenAccounts))
+	for _, qa := range s.cfg.QwenAccounts {
+		if t := strings.TrimSpace(qa.Ticket); t != "" {
+			tickets = append(tickets, t)
+		}
+	}
+	return tickets
+}
+
 func (s *Store) FindAccount(identifier string) (Account, bool) {
 	identifier = strings.TrimSpace(identifier)
 	s.mu.RLock()

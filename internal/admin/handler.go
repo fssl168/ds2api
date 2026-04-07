@@ -8,6 +8,7 @@ type Handler struct {
 	Store ConfigStore
 	Pool  PoolController
 	DS    DeepSeekCaller
+	QW    QwenCaller
 }
 
 func RegisterRoutes(r chi.Router, h *Handler) {
@@ -32,6 +33,11 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		pr.Post("/accounts/test", h.testSingleAccount)
 		pr.Post("/accounts/test-all", h.testAllAccounts)
 		pr.Post("/accounts/sessions/delete-all", h.deleteAllSessions)
+		pr.Get("/qwen-accounts", h.listQwenAccounts)
+		pr.Post("/qwen-accounts", h.addQwenAccount)
+		pr.Delete("/qwen-accounts/{label}", h.deleteQwenAccount)
+		pr.Post("/qwen-accounts/{label}/test", h.testQwenAccount)
+		pr.Get("/qwen-pool/status", h.qwenPoolStatus)
 		pr.Post("/import", h.batchImport)
 		pr.Post("/test", h.testAPI)
 		pr.Post("/vercel/sync", h.syncVercel)

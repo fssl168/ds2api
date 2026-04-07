@@ -8,6 +8,7 @@ import (
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	"ds2api/internal/deepseek"
+	"ds2api/internal/qwen"
 )
 
 type ConfigStore interface {
@@ -50,6 +51,12 @@ type DeepSeekCaller interface {
 	DeleteAllSessionsForToken(ctx context.Context, token string) error
 }
 
+type QwenCaller interface {
+	Pool() *qwen.QwenPool
+	ResetTickets()
+}
+
 var _ ConfigStore = (*config.Store)(nil)
 var _ PoolController = (*account.Pool)(nil)
 var _ DeepSeekCaller = (*deepseek.Client)(nil)
+var _ QwenCaller = (*qwen.Client)(nil)

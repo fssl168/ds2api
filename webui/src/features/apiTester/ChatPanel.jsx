@@ -12,7 +12,10 @@ export default function ChatPanel({
     streamingContent,
     onRunTest,
     onStopGeneration,
+    model,
 }) {
+    const isQwen = model && (model.startsWith('qwen') || model.startsWith('Qwen'))
+    const modelName = isQwen ? '通义千问' : 'DeepSeek'
     return (
         <div className="lg:col-span-9 flex flex-col bg-card border border-border rounded-xl shadow-sm overflow-hidden min-h-0 flex-1 relative">
             <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-8 custom-scrollbar scroll-smooth">
@@ -37,7 +40,7 @@ export default function ChatPanel({
                         </div>
                         <div className="space-y-3 flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                                <span className="font-semibold text-sm text-foreground">DeepSeek</span>
+                                <span className="font-semibold text-sm text-foreground">{modelName}</span>
                                 {response && (
                                     <span className={clsx(
                                         "text-[10px] px-1.5 py-0.5 rounded-sm border uppercase font-medium tracking-wider",
@@ -102,7 +105,7 @@ export default function ChatPanel({
                     </div>
                 </div>
                 <div className="max-w-4xl mx-auto mt-3 flex justify-center">
-                    <span className="text-[10px] text-muted-foreground/40 font-medium">{t('apiTester.adminConsoleLabel')}</span>
+                    <span className="text-[10px] text-muted-foreground/40 font-medium">{isQwen ? t('apiTester.qwenConsoleLabel') : t('apiTester.adminConsoleLabel')}</span>
                 </div>
             </div>
         </div>

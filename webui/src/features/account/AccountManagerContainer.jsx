@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useI18n } from '../../i18n'
 import { useAccountsData } from './useAccountsData'
 import { useAccountActions } from './useAccountActions'
@@ -6,6 +7,8 @@ import ApiKeysPanel from './ApiKeysPanel'
 import AccountsTable from './AccountsTable'
 import AddKeyModal from './AddKeyModal'
 import AddAccountModal from './AddAccountModal'
+import QwenAccountsTable from './QwenAccountsTable'
+import AddQwenAccountModal from './AddQwenAccountModal'
 
 export default function AccountManagerContainer({ config, onRefresh, onMessage, authFetch }) {
     const { t } = useI18n()
@@ -27,6 +30,66 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
         searchQuery,
         handleSearchChange,
     } = useAccountsData({ apiFetch })
+
+    // Qwen account state
+    const [qwenAccounts, setQwenAccounts] = useState([])
+    const [loadingQwen, setLoadingQwen] = useState(false)
+    const [showAddQwen, setShowAddQwen] = useState(false)
+    const [newQwenAccount, setNewQwenAccount] = useState({ ticket: '', label: '' })
+    const [testingQwen, setTestingQwen] = useState({})
+
+    const fetchQwenAccounts = async () => {
+        setLoadingQwen(true)
+        try {
+            const res = await apiFetch('/admin/qwen-accounts')
+            if (res.ok) {
+                const data = await res.json()
+                setQwenAccounts(data.items || [])
+            }
+        } catch (e) { console.error('fetchQwenAccounts error', e) }
+        finally { setLoadingQwen(false) }
+    }
+
+    const addQwenAccount = async () => {
+        if (!newQwenAccount.ticket.trim()) return
+        try {
+            const res = await apiFetch('/admin/qwen-accounts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newQwenAccount),
+            })
+            if (res.ok) {
+                setShowAddQwen(false)
+                setNewQwenAccount({ ticket: '', label: '' })
+                fetchQwenAccounts()
+            }
+        } catch (e) { console.error('addQwen error', e) }
+    }
+
+    const deleteQwenAccount = async (label) => {
+        try {
+            const res = await apiFetch(`/admin/qwen-accounts/${encodeURIComponent(label)}`, { method: 'DELETE' })
+            if (res.ok) {
+                setQwenAccounts(prev => prev.filter(qa => qa.label !== label))
+            }
+        } catch (e) { console.error('deleteQwen error', e) }
+    }
+
+    const testQwenAccount = async (label) => {
+        setTestingQwen(prev => ({ ...prev, [label]: true }))
+        try {
+            const res = await apiFetch(`/admin/qwen-accounts/${encodeURIComponent(label)}/test`, { method: 'POST' })
+            if (res.ok) {
+                onMessage?.(t('accountManager.qwenTestSuccess'), 'success')
+            } else {
+                onMessage?.(t('accountManager.testFailed'), 'error')
+            }
+        } catch (e) { onMessage?.(t('accountManager.testFailed'), 'error') }
+        finally { setTestingQwen(prev => ({ ...prev, [label]: false })) }
+    }
+
+    // Fetch Qwen accounts on mount
+    useEffect(() => { fetchQwenAccounts() }, [])
 
     const {
         showAddKey,
@@ -143,6 +206,25 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 loading={loading}
                 onClose={() => setShowAddAccount(false)}
                 onAdd={addAccount}
+            />
+
+            <QwenAccountsTable
+                t={t}
+                accounts={qwenAccounts}
+                loading={loadingQwen}
+                testing={testingQwen}
+                onShowAddQwen={() => setShowAddQwen(true)}
+                onTestQwen={testQwenAccount}
+                onDeleteQwen={deleteQwenAccount}
+            />
+
+            <AddQwenAccountModal
+                show={showAddQwen}
+                t={t}
+                newQwenAccount={newQwenAccount}
+                setNewQwenAccount={setNewQwenAccount}
+                onClose={() => setShowAddQwen(false)}
+                onAdd={addQwenAccount}
             />
         </div>
     )

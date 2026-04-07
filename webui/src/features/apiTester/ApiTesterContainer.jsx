@@ -48,6 +48,12 @@ export default function ApiTesterContainer({ config, onMessage, authFetch }) {
     const customKeyManaged = customKeyActive && configuredKeys.includes(trimmedApiKey)
 
     const models = [
+        { id: 'qwen-plus', name: 'qwen-plus', icon: 'MessageSquare', desc: t('apiTester.models.qwenPlus'), color: 'text-blue-500' },
+        { id: 'qwen-max', name: 'qwen-max', icon: 'Cpu', desc: t('apiTester.models.qwenMax'), color: 'text-blue-600' },
+        { id: 'qwen-coder', name: 'qwen-coder', icon: 'Code', desc: t('apiTester.models.qwenCoder'), color: 'text-violet-500' },
+        { id: 'qwen-flash', name: 'qwen-flash', icon: 'Zap', desc: t('apiTester.models.qwenFlash'), color: 'text-green-500' },
+        { id: 'qwen3.5-plus', name: 'qwen3.5-plus', icon: 'Sparkles', desc: t('apiTester.models.qwen35Plus'), color: 'text-indigo-500' },
+        { id: 'qwen3.5-flash', name: 'qwen3.5-flash', icon: 'Bolt', desc: t('apiTester.models.qwen35Flash'), color: 'text-emerald-500' },
         { id: 'deepseek-chat', name: 'deepseek-chat', icon: 'MessageSquare', desc: t('apiTester.models.chat'), color: 'text-amber-500' },
         { id: 'deepseek-reasoner', name: 'deepseek-reasoner', icon: 'Cpu', desc: t('apiTester.models.reasoner'), color: 'text-amber-600' },
         { id: 'deepseek-chat-search', name: 'deepseek-chat-search', icon: 'SearchIcon', desc: t('apiTester.models.chatSearch'), color: 'text-cyan-500' },
@@ -103,6 +109,7 @@ export default function ApiTesterContainer({ config, onMessage, authFetch }) {
                 streamingContent={streamingContent}
                 onRunTest={runTest}
                 onStopGeneration={stopGeneration}
+                model={model}
             />
         </div>
     )

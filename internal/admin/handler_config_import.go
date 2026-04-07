@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"ds2api/internal/config"
 )
@@ -45,16 +46,18 @@ func (h *Handler) configImport(w http.ResponseWriter, r *http.Request) {
 	}
 	incoming.ClearAccountTokens()
 
-	importedKeys, importedAccounts := 0, 0
+	importedKeys, importedAccounts, importedQwenAccounts := 0, 0, 0
 	err = h.Store.Update(func(c *config.Config) error {
 		next := c.Clone()
 		if mode == "replace" {
 			next = incoming.Clone()
 			next.Accounts = normalizeAndDedupeAccounts(next.Accounts)
+			next.QwenAccounts = normalizeAndDedupeQwenAccounts(next.QwenAccounts)
 			next.VercelSyncHash = c.VercelSyncHash
 			next.VercelSyncTime = c.VercelSyncTime
 			importedKeys = len(next.Keys)
 			importedAccounts = len(next.Accounts)
+			importedQwenAccounts = len(next.QwenAccounts)
 		} else {
 			existingKeys := map[string]struct{}{}
 			for _, k := range next.Keys {
@@ -120,6 +123,27 @@ func (h *Handler) configImport(w http.ResponseWriter, r *http.Request) {
 					next.ModelAliases[k] = v
 				}
 			}
+
+			existingQwenAccounts := map[string]struct{}{}
+			for _, qa := range next.QwenAccounts {
+				key := qwenAccountDedupeKey(qa)
+				if key != "" {
+					existingQwenAccounts[key] = struct{}{}
+				}
+			}
+			for _, qa := range incoming.QwenAccounts {
+				qa = normalizeQwenAccountForStorage(qa)
+				key := qwenAccountDedupeKey(qa)
+				if key == "" {
+					continue
+				}
+				if _, ok := existingQwenAccounts[key]; ok {
+					continue
+				}
+				existingQwenAccounts[key] = struct{}{}
+				next.QwenAccounts = append(next.QwenAccounts, qa)
+				importedQwenAccounts++
+			}
 			if incoming.Responses.StoreTTLSeconds > 0 {
 				next.Responses.StoreTTLSeconds = incoming.Responses.StoreTTLSeconds
 			}
@@ -167,12 +191,16 @@ func (h *Handler) configImport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Pool.Reset()
+	if h.QW != nil {
+		h.QW.ResetTickets()
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"success":           true,
-		"mode":              mode,
-		"imported_keys":     importedKeys,
-		"imported_accounts": importedAccounts,
-		"message":           "config imported",
+		"success":                true,
+		"mode":                   mode,
+		"imported_keys":          importedKeys,
+		"imported_accounts":      importedAccounts,
+		"imported_qwen_accounts": importedQwenAccounts,
+		"message":                "config imported",
 	})
 }
 
@@ -184,4 +212,48 @@ func (h *Handler) computeSyncHash() string {
 	b, _ := json.Marshal(snap)
 	sum := md5.Sum(b)
 	return fmt.Sprintf("%x", sum)
+}
+
+func normalizeAndDedupeQwenAccounts(accounts []config.QwenAccount) []config.QwenAccount {
+	seen := map[string]struct{}{}
+	result := make([]config.QwenAccount, 0, len(accounts))
+	for _, qa := range accounts {
+		qa = normalizeQwenAccountForStorage(qa)
+		key := qwenAccountDedupeKey(qa)
+		if key == "" {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		result = append(result, qa)
+	}
+	return result
+}
+
+func normalizeQwenAccountForStorage(qa config.QwenAccount) config.QwenAccount {
+	qa.Ticket = strings.TrimSpace(qa.Ticket)
+	if qa.Label == "" {
+		if qa.Ticket != "" {
+			qa.Label = "qwen-" + qa.Ticket[:min(8, len(qa.Ticket))]
+		} else {
+			qa.Label = fmt.Sprintf("qwen-%d", time.Now().UnixNano()%10000)
+		}
+	} else {
+		qa.Label = strings.TrimSpace(qa.Label)
+	}
+	return qa
+}
+
+func qwenAccountDedupeKey(qa config.QwenAccount) string {
+	ticket := strings.TrimSpace(qa.Ticket)
+	label := strings.TrimSpace(qa.Label)
+	if ticket == "" && label == "" {
+		return ""
+	}
+	if ticket != "" {
+		return "ticket:" + ticket
+	}
+	return "label:" + label
 }

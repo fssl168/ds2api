@@ -7,6 +7,7 @@ import (
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	"ds2api/internal/deepseek"
+	"ds2api/internal/qwen"
 )
 
 type AuthResolver interface {
@@ -16,6 +17,13 @@ type AuthResolver interface {
 }
 
 type DeepSeekCaller interface {
+	CreateSession(ctx context.Context, a *auth.RequestAuth, maxAttempts int) (string, error)
+	GetPow(ctx context.Context, a *auth.RequestAuth, maxAttempts int) (string, error)
+	CallCompletion(ctx context.Context, a *auth.RequestAuth, payload map[string]any, powResp string, maxAttempts int) (*http.Response, error)
+	DeleteAllSessionsForToken(ctx context.Context, token string) error
+}
+
+type QwenCaller interface {
 	CreateSession(ctx context.Context, a *auth.RequestAuth, maxAttempts int) (string, error)
 	GetPow(ctx context.Context, a *auth.RequestAuth, maxAttempts int) (string, error)
 	CallCompletion(ctx context.Context, a *auth.RequestAuth, payload map[string]any, powResp string, maxAttempts int) (*http.Response, error)
@@ -34,4 +42,5 @@ type ConfigReader interface {
 
 var _ AuthResolver = (*auth.Resolver)(nil)
 var _ DeepSeekCaller = (*deepseek.Client)(nil)
+var _ QwenCaller = (*qwen.Client)(nil)
 var _ ConfigReader = (*config.Store)(nil)
