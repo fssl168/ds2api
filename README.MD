@@ -4,17 +4,17 @@
 
 # DS2API
 
-[![License](https://img.shields.io/github/license/CJackHwang/ds2api.svg)](LICENSE)
-![Stars](https://img.shields.io/github/stars/CJackHwang/ds2api.svg)
-![Forks](https://img.shields.io/github/forks/CJackHwang/ds2api.svg)
-[![Release](https://img.shields.io/github/v/release/CJackHwang/ds2api?display_name=tag)](https://github.com/CJackHwang/ds2api/releases)
+[![License](https://img.shields.io/github/license/fssl168/ds2api.svg)](LICENSE)
+![Stars](https://img.shields.io/github/stars/fssl168/ds2api.svg)
+![Forks](https://img.shields.io/github/forks/fssl168/ds2api.svg)
+[![Release](https://img.shields.io/github/v/release/fssl168/ds2api?display_name=tag)](https://github.com/fssl168/ds2api/releases)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](docs/DEPLOY.md)
 [![Deploy on Zeabur](https://zeabur.com/button.svg)](https://zeabur.com/templates/L4CFHP)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/CJackHwang/ds2api)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/fssl168/ds2api)
 
 语言 / Language: [中文](README.MD) | [English](README.en.md)
 
-将 DeepSeek Web 对话能力转换为 OpenAI、Claude 与 Gemini 兼容 API。后端为 **Go 全量实现**，前端为 React WebUI 管理台（源码在 `webui/`，部署时自动构建到 `static/admin`）。
+将 **DeepSeek** 与 **通义千问（Qwen）** 的 Web 对话能力转换为 OpenAI、Claude 与 Gemini 兼容 API。后端为 **Go 全量实现**，前端为 React WebUI 管理台（源码在 `webui/`，部署时自动构建到 `static/admin`）。
 
 > **重要免责声明**
 >
@@ -41,8 +41,14 @@ flowchart LR
             GA["Gemini 适配器\n/v1beta/models/*"]
         end
 
+        subgraph Backends["后端引擎"]
+            DS_Client["☁️ DeepSeek 客户端\n账号池 + PoW WASM"]
+            QW_Client["🌊 通义千问客户端\nQwenPool 账号池"]
+        end
+
         subgraph Support["支撑模块"]
-            Pool["📦 账号池 / 并发队列"]
+            Pool["📦 DeepSeek 账号池\n并发队列 + 等待队列"]
+            QW_Pool["📦 Qwen 账号池\nAcquire/Release 模式"]
             PoW["⚙️ PoW WASM\n(wazero)"]
         end
 
@@ -50,34 +56,35 @@ flowchart LR
         WebUI["🌐 WebUI\n(/admin)"]
     end
 
-    DS["☁️ DeepSeek API"]
-
     Client -- "请求" --> CORS --> Auth
     Auth --> OA & CA & GA
-    OA & CA & GA -- "调用" --> DS
+    OA & CA & GA -- "DeepSeek 模型" --> DS_Client
+    OA & CA & GA -- "Qwen 模型" --> QW_Client
     Auth --> Admin
-    OA & CA & GA -. "轮询选账号" .-> Pool
-    OA & CA & GA -. "计算 PoW" .-> PoW
-    DS -- "响应" --> Client
+    DS_Client -. "轮询选账号" .-> Pool
+    DS_Client -. "计算 PoW" .-> PoW
+    QW_Client -. "Acquire/Release" .-> QW_Pool
 ```
 
-- **后端**：Go（`cmd/ds2api/`、`api/`、`internal/`），不依赖 Python 运行时
-- **前端**：React 管理台（`webui/`），运行时托管静态构建产物
-- **部署**：本地运行、Docker、Vercel Serverless、Linux systemd
+- **后端**：Go 1.24+（`cmd/ds2api/`、`api/`、`internal/`），不依赖 Python 运行时
+- **前端**：React 18 管理台（`webui/`），Vite + Tailwind CSS 构建
+- **部署**：本地运行、Docker、Vercel Serverless、Linux systemd、Zeabur
 
 ## 核心能力
 
 | 能力 | 说明 |
 | --- | --- |
-| OpenAI 兼容 | `GET /v1/models`、`GET /v1/models/{id}`、`POST /v1/chat/completions`、`POST /v1/responses`、`GET /v1/responses/{response_id}`、`POST /v1/embeddings` |
-| Claude 兼容 | `GET /anthropic/v1/models`、`POST /anthropic/v1/messages`、`POST /anthropic/v1/messages/count_tokens`（及快捷路径 `/v1/messages`、`/messages`） |
-| Gemini 兼容 | `POST /v1beta/models/{model}:generateContent`、`POST /v1beta/models/{model}:streamGenerateContent`（及 `/v1/models/{model}:*` 路径） |
-| 多账号轮询 | 自动 token 刷新、邮箱/手机号双登录方式 |
+| **双引擎支持** | DeepSeek + 通义千问（Qwen）双后端，统一 OpenAI 接口暴露 |
+| OpenAI 兼容 | `GET /v1/models`、`POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/embeddings` |
+| Claude 兼容 | `POST /anthropic/v1/messages`、`POST /anthropic/v1/messages/count_tokens` |
+| Gemini 兼容 | `POST /v1beta/models/{model}:generateContent` / `streamGenerateContent` |
+| DeepSeek 多账号轮询 | 自动 token 刷新、邮箱/手机号双登录方式、PoW WASM 计算 |
+| **Qwen 账号池** | Acquire/Release 模式、并发控制、等待队列、健康检查、自动冷却 |
 | 并发队列控制 | 每账号 in-flight 上限 + 等待队列，动态计算建议并发值 |
-| DeepSeek PoW | WASM 计算（`wazero`），无需外部 Node.js 依赖 |
-| Tool Calling | 防泄漏处理：非代码块高置信特征识别、`delta.tool_calls` 早发、结构化增量输出 |
-| Admin API | 配置管理、运行时设置热更新、账号测试 / 批量测试、会话清理、导入导出、Vercel 同步、版本检查 |
-| WebUI 管理台 | `/admin` 单页应用（中英文双语、深色模式） |
+| Tool Calling | 防泄漏处理：非代码块高置信特征识别、多格式解析（XML/JSON/ANTML/invoke） |
+| Admin API | 配置管理、运行时设置热更新、账号测试、批量导入导出、Vercel 同步 |
+| **Qwen 账号管理** | CRUD API、池状态监控、批量导入（全量模板含 qwen_only 专用模板） |
+| WebUI 管理台 | `/admin` 单页应用（中英文双语、深色模式、Qwen 账号独立管理面板） |
 | 运维探针 | `GET /healthz`（存活）、`GET /readyz`（就绪） |
 
 ## 平台兼容矩阵
@@ -94,16 +101,29 @@ flowchart LR
 
 ## 模型支持
 
-### OpenAI 接口
+### DeepSeek 模型（OpenAI 接口）
 
-| 模型 | thinking | search |
+| 模型 | thinking | search | 后端 |
+| --- | --- | --- | --- |
+| `deepseek-chat` | ❌ | ❌ | DeepSeek |
+| `deepseek-reasoner` | ✅ | ❌ | DeepSeek |
+| `deepseek-chat-search` | ❌ | ✅ | DeepSeek |
+| `deepseek-reasoner-search` | ✅ | ✅ | DeepSeek |
+
+### 通义千问模型（OpenAI 接口）
+
+| 模型 | 说明 | 后端 |
 | --- | --- | --- |
-| `deepseek-chat` | ❌ | ❌ |
-| `deepseek-reasoner` | ✅ | ❌ |
-| `deepseek-chat-search` | ❌ | ✅ |
-| `deepseek-reasoner-search` | ✅ | ✅ |
+| `qwen-plus` | 千问 Plus | 通义千问 |
+| `qwen-max` | 千问 Max | 通义千问 |
+| `qwen-coder` | 千问 Coder | 通义千问 |
+| `qwen-flash` | 千问 Flash（轻量快速） | 通义千问 |
+| `qwen3.5-plus` | Qwen 3.5 Plus | 通义千问 |
+| `qwen3.5-flash` | Qwen 3.5 Flash | 通义千问 |
 
-### Claude 接口
+> Qwen 模型通过模型名前缀自动路由到通义千问引擎。调用时使用与 DeepSeek 相同的 OpenAI 兼容接口格式。
+
+### Claude 接口（映射到 DeepSeek）
 
 | 模型 | 默认映射 |
 | --- | --- |
@@ -114,13 +134,12 @@ flowchart LR
 可通过配置中的 `claude_mapping` 或 `claude_model_mapping` 覆盖映射关系。
 另外，`/anthropic/v1/models` 现已包含 Claude 1.x/2.x/3.x/4.x 历史模型 ID 与常见别名，便于旧客户端直接兼容。
 
-
 #### Claude Code 接入避坑（实测）
 
 - `ANTHROPIC_BASE_URL` 推荐直接指向 DS2API 根地址（例如 `http://127.0.0.1:5001`），Claude Code 会请求 `/v1/messages?beta=true`。
 - `ANTHROPIC_API_KEY` 需要与 `config.json` 中 `keys` 一致；建议同时保留常规 key 与 `sk-ant-*` 形态 key，兼容不同客户端校验习惯。
 - 若系统设置了代理，建议对 DS2API 地址配置 `NO_PROXY=127.0.0.1,localhost,<你的主机IP>`，避免本地回环请求被代理拦截。
-- 如遇“工具调用输出成文本、未执行”问题，请升级到包含 Claude 工具调用多格式解析（JSON/XML/ANTML/invoke）的版本。
+- 如遇"工具调用输出成文本、未执行"问题，请升级到包含 Claude 工具调用多格式解析（JSON/XML/ANTML/invoke）的版本。
 
 ### Gemini 接口
 
@@ -130,11 +149,28 @@ Gemini 适配器将模型名通过 `model_aliases` 或内置规则映射到 Deep
 
 ### 通用第一步（所有部署方式）
 
-把 `config.json` 作为唯一配置源（推荐做法）：
+创建配置文件：
 
-```bash
-cp config.example.json config.json
-# 编辑 config.json
+```json
+{
+  "keys": ["your-api-key-1", "your-api-key-2"],
+  "accounts": [
+    {
+      "email": "user@example.com",
+      "password": "your-password"
+    },
+    {
+      "mobile": "13800138000",
+      "password": "your-password"
+    }
+  ],
+  "qwen_accounts": [
+    {
+      "ticket": "your-qwen-ticket-string",
+      "label": "qwen-account-1"
+    }
+  ]
+}
 ```
 
 后续部署建议：
@@ -148,30 +184,30 @@ cp config.example.json config.json
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/CJackHwang/ds2api.git
+git clone https://github.com/fssl168/ds2api.git
 cd ds2api
 
-# 2. 配置
-cp config.example.json config.json
-# 编辑 config.json，填入你的 DeepSeek 账号信息和 API key
+# 2. 创建配置文件 config.json（参考上方示例）
 
 # 3. 启动
 go run ./cmd/ds2api
 ```
 
-默认监听地址：`http://localhost:5001`
+默认监听地址：`http://localhost:5001`，管理后台：`http://localhost:5001/admin`
 
-> **WebUI 自动构建**：本地首次启动时，若 `static/admin` 不存在，会自动尝试执行 `npm ci`（仅在缺少依赖时）和 `npm run build -- --outDir static/admin --emptyOutDir`（需要本机有 Node.js）。你也可以手动构建：`./scripts/build-webui.sh`
+> **WebUI 自动构建**：本地首次启动时，若 `static/admin` 不存在，会自动尝试执行 `npm ci` 和 `npm run build`。你也可以手动构建：
+> ```bash
+> cd webui && npm run build -- --outDir ../static/admin --emptyOutDir
+> ```
 
 ### 方式二：Docker 运行
 
 ```bash
 # 1. 准备环境变量和配置文件
 cp .env.example .env
-cp config.example.json config.json
+# 编辑 .env（至少设置 DS2API_ADMIN_KEY）
 
-# 2. 编辑 .env（至少设置 DS2API_ADMIN_KEY）
-#    DS2API_ADMIN_KEY=请替换为强密码
+# 2. 创建 config.json（参考上方示例）
 
 # 3. 启动
 docker-compose up -d
@@ -180,17 +216,13 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-默认 `docker-compose.yml` 会把宿主机 `6011` 映射到容器内的 `5001`。如果你希望直接对外暴露 `5001`，请调整 `ports` 配置。
-
-更新镜像：`docker-compose up -d --build`
+默认 `docker-compose.yml` 会把宿主机 `6011` 映射到容器内的 `5001`。更新镜像：`docker-compose up -d --build`
 
 #### Zeabur 一键部署（Dockerfile）
 
-1. 点击上方 “Deploy on Zeabur” 按钮，一键部署。
-2. 部署完成后访问 `/admin`，使用 Zeabur 环境变量/模板指引中的 `DS2API_ADMIN_KEY` 登录。
+1. 点击上方 "Deploy on Zeabur" 按钮，一键部署。
+2. 部署完成后访问 `/admin`，使用环境变量中的 `DS2API_ADMIN_KEY` 登录。
 3. 在管理台导入/编辑配置（会写入并持久化到 `/data/config.json`）。
-
-说明：Zeabur 使用仓库内 `Dockerfile` 直接构建时，不需要额外传入 `BUILD_VERSION`；镜像会优先读取该构建参数，未提供时自动回退到仓库根目录的 `VERSION` 文件。
 
 ### 方式三：Vercel 部署
 
@@ -199,20 +231,13 @@ docker-compose logs -f
 3. 配置环境变量（最少设置 `DS2API_ADMIN_KEY`；推荐同时设置 `DS2API_CONFIG_JSON`）
 4. 部署
 
-建议先在仓库目录复制模板并填写：
-
-```bash
-cp config.example.json config.json
-# 编辑 config.json
-```
-
-推荐：先本地把 `config.json` 转成 Base64，再粘贴到 `DS2API_CONFIG_JSON`，避免 JSON 格式错误：
+推荐先本地把 `config.json` 转 Base64 再粘贴：
 
 ```bash
 base64 < config.json | tr -d '\n'
 ```
 
-> **流式说明**：`/v1/chat/completions` 在 Vercel 上默认走 `api/chat-stream.js`（Node Runtime）以保证实时 SSE。鉴权、账号选择、会话/PoW 准备仍由 Go 内部 prepare 接口完成；流式响应（含 `tools`）在 Node 侧执行与 Go 对齐的输出组装与防泄漏处理。
+> **流式说明**：`/v1/chat/completions` 在 Vercel 上默认走 `api/chat-stream.js`（Node Runtime）以保证实时 SSE。鉴权、账号选择、会话/PoW 准备仍由 Go 内部 prepare 接口完成。
 
 详细部署说明请参阅 [部署指南](docs/DEPLOY.md)。
 
@@ -221,34 +246,15 @@ base64 < config.json | tr -d '\n'
 每次发布 Release 时，GitHub Actions 会自动构建多平台二进制包：
 
 ```bash
-# 下载对应平台的压缩包后
 tar -xzf ds2api_<tag>_linux_amd64.tar.gz
 cd ds2api_<tag>_linux_amd64
 cp config.example.json config.json
-# 编辑 config.json
 ./ds2api
 ```
 
-### 方式五：OpenCode CLI 接入
-
-1. 复制示例配置：
-
-```bash
-cp opencode.json.example opencode.json
-```
-
-2. 编辑 `opencode.json`：
-- 将 `baseURL` 改为你的 DS2API 地址（例如 `https://your-domain.com/v1`）
-- 将 `apiKey` 改为你的 DS2API key（对应 `config.keys`）
-
-3. 在项目目录启动 OpenCode CLI（按你的安装方式运行 `opencode`）。
-
-> 建议优先使用 OpenAI 兼容路径（`/v1/*`），即示例里的 `@ai-sdk/openai-compatible` provider。
-> 若客户端支持 `wire_api`，可分别测试 `responses` 与 `chat`，DS2API 两条链路都兼容。
-
 ## 配置说明
 
-### `config.json` 示例
+### `config.json` 完整示例
 
 ```json
 {
@@ -259,8 +265,18 @@ cp opencode.json.example opencode.json
       "password": "your-password"
     },
     {
-      "mobile": "12345678901",
+      "mobile": "13800138000",
       "password": "your-password"
+    }
+  ],
+  "qwen_accounts": [
+    {
+      "ticket": "your-qwen-ticket-string",
+      "label": "qwen-account-1"
+    },
+    {
+      "ticket": "another-ticket-string",
+      "label": "qwen-account-2"
     }
   ],
   "model_aliases": {
@@ -277,7 +293,7 @@ cp opencode.json.example opencode.json
   "embeddings": {
     "provider": "deterministic"
   },
-  "claude_mapping": {
+  "claude_model_mapping": {
     "fast": "deepseek-chat",
     "slow": "deepseek-reasoner"
   },
@@ -296,18 +312,27 @@ cp opencode.json.example opencode.json
 }
 ```
 
-- `keys`：API 访问密钥列表，客户端通过 `Authorization: Bearer <key>` 鉴权
-- `accounts`：DeepSeek 账号列表，支持 `email` 或 `mobile` 登录
-- `token`：配置文件中即使填写也会在加载时被清空（不会从 `config.json` 读取 token）；实际 token 仅在运行时内存中维护并自动刷新
-- `model_aliases`：常见模型名（如 GPT/Codex/Claude）到 DeepSeek 模型的映射
-- `compat.wide_input_strict_output`：建议保持 `true`（当前实现默认宽进严出）
-- `toolcall`：策略已固定为特征匹配 + 高置信早发，不再作为可配置项
-- `responses.store_ttl_seconds`：`/v1/responses/{id}` 的内存缓存 TTL
-- `embeddings.provider`：embedding 提供方（当前内置 `deterministic/mock/builtin`）
-- `claude_mapping`：字典中 `fast`/`slow` 后缀映射到对应 DeepSeek 模型（兼容读取 `claude_model_mapping`）
-- `admin`：管理后台设置（JWT 过期时间、密码哈希等），可通过 Admin Settings API 热更新
-- `runtime`：运行时参数（并发限制、队列大小、托管账号 token 刷新间隔），可通过 Admin Settings API 热更新；`account_max_queue=0`/`global_max_inflight=0` 表示按推荐值自动计算，`token_refresh_interval_hours=6` 为默认强制重登间隔
-- `auto_delete.sessions`：是否在请求结束后自动清理 DeepSeek 会话（默认 `false`，可在 Settings 热更新）
+#### 字段说明
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `keys` | `string[]` | API 访问密钥列表，客户端通过 `Authorization: Bearer <key>` 鉴权 |
+| `accounts` | `Account[]` | DeepSeek 账号列表，支持 `email` 或 `mobile` 登录 |
+| `accounts[].token` | `string` | 运行时自动获取的 session token，**配置中填写也会被清空**，仅内存维护 |
+| **`qwen_accounts`** | **`QwenAccount[]`** | **通义千问账号列表，每个账号包含 ticket（凭证）和 label（显示名）** |
+| **`qwen_accounts[].ticket`** | **`string`** | **通义千问凭证（类似 API Key），完整保留在导出中** |
+| **`qwen_accounts[].label`** | **`string`** | **显示标签，用于区分不同千问账号** |
+| `model_aliases` | `map[string]string` | 常见模型名到实际模型的映射（如 gpt-4o → deepseek-chat） |
+| `compat.wide_input_strict_output` | `bool` | 建议保持 `true`（宽进严出模式） |
+| `responses.store_ttl_seconds` | `int` | `/v1/responses/{id}` 内存缓存 TTL（秒） |
+| `embeddings.provider` | `string` | Embedding 提供方（`deterministic`/`mock`/`builtin`） |
+| `claude_model_mapping` | `map[string]string` | Claude 模型映射（fast/slow → deepseek 模型） |
+| `admin.jwt_expire_hours` | `int` | Admin JWT 过期时间（小时） |
+| `runtime.account_max_inflight` | `int` | 每账号最大并发数（默认 2，0 = 自动计算） |
+| `runtime.account_max_queue` | `int` | 等待队列上限（默认 = 建议并发值） |
+| `runtime.global_max_inflight` | `int` | 全局最大并发数（0 = 自动计算） |
+| `runtime.token_refresh_interval_hours` | `int` | DeepSeek token 强制重登间隔（默认 6 小时） |
+| `auto_delete.sessions` | `bool` | 请求结束后是否自动清理 DeepSeek 会话（默认 false） |
 
 ### 环境变量
 
@@ -321,30 +346,16 @@ cp opencode.json.example opencode.json
 | `DS2API_CONFIG_PATH` | 配置文件路径 | `config.json` |
 | `DS2API_CONFIG_JSON` | 直接注入配置（JSON 或 Base64） | — |
 | `CONFIG_JSON` | 旧版兼容配置注入 | — |
-| `DS2API_ENV_WRITEBACK` | 环境变量模式下自动写回配置文件并切换文件模式（`1/true/yes/on`） | 关闭 |
+| `DS2API_ENV_WRITEBACK` | 环境变量模式下自动写回配置文件 | 关闭 |
 | `DS2API_WASM_PATH` | PoW WASM 文件路径 | 自动查找 |
 | `DS2API_STATIC_ADMIN_DIR` | 管理台静态文件目录 | `static/admin` |
 | `DS2API_AUTO_BUILD_WEBUI` | 启动时自动构建 WebUI | 本地开启，Vercel 关闭 |
-| `DS2API_DEV_PACKET_CAPTURE` | 本地开发抓包开关（记录最近会话请求/响应体） | 本地非 Vercel 默认开启 |
-| `DS2API_DEV_PACKET_CAPTURE_LIMIT` | 本地抓包保留条数（超出自动淘汰） | `5` |
-| `DS2API_DEV_PACKET_CAPTURE_MAX_BODY_BYTES` | 单条响应体最大记录字节数 | `2097152` |
 | `DS2API_ACCOUNT_MAX_INFLIGHT` | 每账号最大并发 in-flight 请求数 | `2` |
-| `DS2API_ACCOUNT_CONCURRENCY` | 同上（兼容旧名） | — |
 | `DS2API_ACCOUNT_MAX_QUEUE` | 等待队列上限 | `recommended_concurrency` |
-| `DS2API_ACCOUNT_QUEUE_SIZE` | 同上（兼容旧名） | — |
 | `DS2API_GLOBAL_MAX_INFLIGHT` | 全局最大 in-flight 请求数 | `recommended_concurrency` |
-| `DS2API_MAX_INFLIGHT` | 同上（兼容旧名） | — |
-| `DS2API_VERCEL_INTERNAL_SECRET` | Vercel 混合流式内部鉴权密钥 | 回退用 `DS2API_ADMIN_KEY` |
-| `DS2API_VERCEL_STREAM_LEASE_TTL_SECONDS` | 流式 lease 过期秒数 | `900` |
-| `DS2API_DEV_PACKET_CAPTURE` | 本地开发抓包开关（记录最近会话请求/响应体） | 本地非 Vercel 默认开启 |
-| `DS2API_DEV_PACKET_CAPTURE_LIMIT` | 本地抓包保留条数（超出自动淘汰） | `5` |
-| `DS2API_DEV_PACKET_CAPTURE_MAX_BODY_BYTES` | 单条响应体最大记录字节数 | `2097152` |
 | `VERCEL_TOKEN` | Vercel 同步 token | — |
 | `VERCEL_PROJECT_ID` | Vercel 项目 ID | — |
 | `VERCEL_TEAM_ID` | Vercel 团队 ID | — |
-| `DS2API_VERCEL_PROTECTION_BYPASS` | Vercel 部署保护绕过密钥（内部 Node→Go 调用） | — |
-
-> 提示：当检测到 `DS2API_CONFIG_JSON/CONFIG_JSON` 时，管理台会显示当前模式风险与自动持久化状态（含 `DS2API_CONFIG_PATH` 路径与模式切换说明）。
 
 ## 鉴权模式
 
@@ -352,118 +363,149 @@ cp opencode.json.example opencode.json
 
 | 模式 | 说明 |
 | --- | --- |
-| **托管账号模式** | `Bearer` 或 `x-api-key` 传入 `config.keys` 中的 key，由服务自动轮询选择账号 |
+| **托管账号模式** | `Bearer` 或 `x-api-key` 传入 `config.keys` 中的 key，由服务自动选择账号 |
 | **直通 token 模式** | 传入 token 不在 `config.keys` 中时，直接作为 DeepSeek token 使用 |
+
+**智能路由**：当请求模型名为 `qwen-*` 前缀时，自动路由到通义千问引擎；否则路由到 DeepSeek 引擎。
 
 可选请求头 `X-Ds2-Target-Account`：指定使用某个托管账号（值为 email 或 mobile）。
 Gemini 路由还可以使用 `x-goog-api-key`，或在没有认证头时使用 `?key=` / `?api_key=` 作为调用方凭据。
 
-## 并发模型
+## 账号池机制
+
+### DeepSeek 账号池
 
 ```
-每账号可用并发 = DS2API_ACCOUNT_MAX_INFLIGHT（默认 2）
+每账号可用并发 = runtime.account_max_inflight（默认 2）
 建议并发值 = 账号数量 × 每账号并发上限
-等待队列上限 = DS2API_ACCOUNT_MAX_QUEUE（默认 = 建议并发值）
-429 阈值 = in-flight + 等待队列 ≈ 账号数量 × 4
+等待队列上限 = runtime.account_max_queue（默认 = 建议并发值）
+429 阈值 ≈ in-flight + 等待队列 ≈ 账号数量 × 4
 ```
 
 - 当 in-flight 槽位满时，请求进入等待队列，**不会立即 429**
 - 超出总承载上限后才返回 `429 Too Many Requests`
+- 支持 PoW（Proof of Work）WASM 计算（wazero 引擎，无需 Node.js）
 - `GET /admin/queue/status` 返回实时并发状态
+
+### 通义千问账号池（QwenPool）
+
+采用 Acquire/Release 模式，完全对标 DeepSeek 账号池的高级特性：
+
+| 特性 | 说明 |
+| --- | --- |
+| **Acquire/Release** | 请求前 acquire 占用，完成后 release 释放 |
+| **并发控制** | `maxInflightPerTicket` 每 ticket 最大并发 |
+| **全局限制** | `globalMaxInflight` 所有 Qwen 账号总并发上限 |
+| **等待队列** | `maxQueueSize` 无可用账号时排队等待 |
+| **健康检查** | `MarkSuccess` / `MarkFailed` 追踪成功率 |
+| **自动冷却** | 连续失败后临时移除，一段时间后自动恢复 |
+| **随机选取** | `RandomEntry()` 用于简单场景的无状态随机分配 |
+| **状态监控** | `GET /admin/qwen-pool/status` 查看池状态 |
+
+Admin API 提供 Qwen 账号完整 CRUD：
+- `GET /admin/qwen-accounts` — 列出所有千问账号
+- `POST /admin/qwen-accounts` — 新增千问账号
+- `PUT /admin/qwen-accounts/:index` — 更新指定账号
+- `DELETE /admin/qwen-accounts/:index` — 删除指定账号
+- `GET /admin/qwen-pool/status` — 查看账号池运行状态
 
 ## Tool Call 适配
 
 当请求中带 `tools` 时，DS2API 会做防泄漏处理与结构化转译：
 
 1. 只在**非代码块上下文**启用执行型 toolcall 识别（代码块示例默认不触发）
-2. 解析层以 XML/Markup 为最高优先级，同时兼容 JSON / ANTML / invoke / text-kv，并统一归一到内部工具调用结构
-3. `responses` 流式严格使用官方 item 生命周期事件（`response.output_item.*`、`response.content_part.*`、`response.function_call_arguments.*`）
-4. `responses` 支持并执行 `tool_choice`（`auto`/`none`/`required`/强制函数）；`required` 违规时非流式返回 `422`，流式返回 `response.failed`
-5. 客户端请求哪种协议，就按该协议返回工具调用（OpenAI/Claude/Gemini 各自原生结构）；模型侧优先约束输出规范 XML，再由兼容层转译
+2. 解析层以 XML/Markup 为最高优先级，同时兼容 JSON / ANTML / invoke / text-kv
+3. `responses` 流式严格使用官方 item 生命周期事件
+4. `responses` 支持并执行 `tool_choice`（`auto`/`none`/`required`/强制函数）
+5. 客户端请求哪种协议，就按该协议返回工具调用（OpenAI/Claude/Gemini 各自原生结构）
 
-> 说明：当前版本在 parser 层仍以“尽量解析成功”为优先，未启用基于 allow-list 的工具名硬拒绝。
->
-> 想评估“把工具调用封装成 XML 再输入模型”的方案，可参考：`docs/toolcall-semantics.md`。
+## 批量导入导出
 
-## 本地开发抓包工具
+管理后台支持配置的批量操作：
 
-用于定位「responses 思考流/工具调用」等问题。开启后会自动记录最近 N 条 DeepSeek 对话上游请求体与响应体（默认 5 条，超出自动淘汰）。
+### 导入
 
-启用示例：
+- **Merge 模式**（默认）：合并去重，保留已有配置，新增不重复的 keys/accounts/qwen_accounts
+- **Replace 模式**：完全替换，用导入配置覆盖现有配置（保留 Vercel 同步信息）
 
-```bash
-DS2API_DEV_PACKET_CAPTURE=true \
-DS2API_DEV_PACKET_CAPTURE_LIMIT=5 \
-go run ./cmd/ds2api
-```
+### 快速模板
 
-查询/清空（需 Admin JWT）：
+| 模板 | 内容 |
+| --- | --- |
+| **全量配置** | keys + accounts + qwen_accounts + claude_model_mapping |
+| **纯邮箱账号** | keys + email accounts |
+| **纯手机号账号** | keys + mobile accounts |
+| **纯 API Key** | 仅 keys |
+| **纯千问账号** | keys + qwen_accounts |
 
-- `GET /admin/dev/captures`：查看抓包列表（最新在前）
-- `DELETE /admin/dev/captures`：清空抓包
+### 导出
 
-返回字段包含：
-
-- `request_body`：发送给 DeepSeek 的完整请求体
-- `response_body`：上游返回的原始流式内容拼接文本
-- `response_truncated`：是否触发单条大小截断
+- **JSON 导出**：完整配置 JSON（DeepSeek Token 已脱敏，Qwen Ticket 完整保留）
+- **Base64 复制**：一键复制 Base64 编码配置，方便迁移和 Vercel 部署
+- **脱敏规则**：仅清除 `accounts[].token`（系统自动生成的 session），用户填写的 password/email/mobile/ticket 全部保留
 
 ## 项目结构
 
 ```text
 ds2api/
 ├── cmd/
-│   ├── ds2api/              # 本地 / 容器启动入口
-│   └── ds2api-tests/        # 端到端测试集入口
+│   └── ds2api/              # 启动入口
 ├── api/
 │   ├── index.go             # Vercel Serverless Go 入口
-│   ├── chat-stream.js       # Vercel Node.js 流式转发
-│   └── (rewrite targets in vercel.json)
+│   └── chat-stream.js       # Vercel Node.js 流式转发
 ├── internal/
-│   ├── account/             # 账号池与并发队列
+│   ├── account/             # DeepSeek 账号池与并发队列
+│   │   ├── pool_core.go     #   核心池逻辑
+│   │   ├── pool_acquire.go  #   Acquire/Release
+│   │   ├── pool_limits.go   #   并发限制
+│   │   └── pool_waiters.go  #   等待队列
 │   ├── adapter/
-│   │   ├── openai/          # OpenAI 兼容适配器（含 Tool Call 解析、Vercel 流式 prepare/release）
+│   │   ├── openai/          # OpenAI 兼容适配器（含 Tool Call 解析）
 │   │   ├── claude/          # Claude 兼容适配器
-│   │   └── gemini/          # Gemini 兼容适配器（generateContent / streamGenerateContent）
-│   ├── admin/               # Admin API handlers（含 Settings 热更新）
+│   │   └── gemini/          # Gemini 兼容适配器
+│   ├── admin/               # Admin API handlers
+│   │   ├── handler_config_import.go   # 批量导入（含 qwen_accounts）
+│   │   ├── handler_qwen_accounts_crud.go  # Qwen 账号 CRUD
+│   │   └── handler_*.go     #   其他管理接口
 │   ├── auth/                # 鉴权与 JWT
-│   ├── claudeconv/          # Claude 消息格式转换
-│   ├── compat/              # 兼容性辅助
-│   ├── config/              # 配置加载与热更新
+│   ├── config/              # 配置加载、编解码、热更新
+│   │   ├── codec.go         #   JSON 序列化（含 QwenAccount）
+│   │   └── store.go         #   配置存储与导出
 │   ├── deepseek/            # DeepSeek API 客户端、PoW WASM
-│   ├── js/                  # Node 运行时流式处理与兼容逻辑
-│   ├── devcapture/          # 开发抓包模块
-│   ├── format/              # 输出格式化
-│   ├── prompt/              # Prompt 构建
+│   │   ├── client_auth.go       # 认证登录
+│   │   ├── client_completion.go  # 对话补全
+│   │   └── pow.go              # PoW 计算
+│   ├── qwen/                # ★ 通义千问客户端（新增）
+│   │   ├── client.go             #   客户端入口 + Pool 初始化
+│   │   ├── client_auth.go        #   Ticket 认证
+│   │   ├── client_completion.go  #   流式/非流式对话
+│   │   ├── client_sec.go         #   安全处理
+│   │   ├── client_session.go     #   会话管理
+│   │   ├── pool.go               #   ★ QwenPool 完整实现
+│   │   ├── sse_scanner.go        #   SSE 流解析
+│   │   ├── prompt.go             #   Prompt 构建
+│   │   ├── constants.go          #   常量定义
+│   │   └── models.go             #   模型注册
 │   ├── server/              # HTTP 路由与中间件（chi router）
 │   ├── sse/                 # SSE 解析工具
 │   ├── stream/              # 统一流式消费引擎
-│   ├── util/                # 通用工具函数
-│   └── webui/               # WebUI 静态文件托管与自动构建
+│   ├── webui/               # WebUI 静态文件托管与自动构建
+│   └── ...                  # 其他辅助模块
 ├── webui/                   # React WebUI 源码（Vite + Tailwind）
 │   └── src/
-│       ├── app/             # 路由、鉴权、配置状态管理
-│       ├── features/        # 业务功能模块（account/settings/vercel/apiTester）
-│       ├── components/      # 登录/落地页等通用组件
-│       └── locales/         # 中英文语言包（zh.json / en.json）
-├── scripts/
-│   └── build-webui.sh       # WebUI 手动构建脚本
-├── tests/
-│   ├── compat/              # 兼容性测试夹具与期望输出
-│   └── scripts/             # 统一测试脚本入口（unit/e2e）
-├── docs/                    # 部署 / 贡献 / 测试等辅助文档
-├── static/admin/            # WebUI 构建产物（不提交到 Git）
-├── .github/
-│   ├── workflows/           # GitHub Actions（质量门禁 + Release 自动构建）
-│   ├── ISSUE_TEMPLATE/      # Issue 模板
-│   └── PULL_REQUEST_TEMPLATE.md
-├── config.example.json      # 配置文件示例
-├── .env.example             # 环境变量示例
+│       ├── features/account/
+│       │   ├── AccountsTable.jsx       # DeepSeek 账号表格
+│       │   ├── QwenAccountsTable.jsx   # ★ 千问账号表格
+│       │   ├── AddQwenAccountModal.jsx # ★ 新增千问账号弹窗
+│       │   └── ...
+│       ├── features/apiTester/          # API 测试器（含 Qwen 模型）
+│       ├── components/BatchImport.jsx   # 批量导入（含 qwen_only 模板）
+│       └── locales/                     # 中英文语言包
+├── static/admin/            # WebUI 构建产物（.gitignore）
 ├── Dockerfile               # 多阶段构建（WebUI + Go）
-├── docker-compose.yml       # 生产环境 Docker Compose
-├── docker-compose.dev.yml   # 开发环境 Docker Compose
-├── vercel.json              # Vercel 路由与构建配置
-└── go.mod / go.sum          # Go 模块依赖
+├── docker-compose.yml       # 生产环境
+├── vercel.json              # Vercel 路由配置
+└── go.mod / go.sum          # Go 1.24+
 ```
 
 ## 文档索引
@@ -479,53 +521,42 @@ ds2api/
 
 ```bash
 # 单元测试（Go + Node）
-./tests/scripts/run-unit-all.sh
+go test ./...
 
-# 一键端到端全链路测试（真实账号，生成完整请求/响应日志）
+# 工具调用相关测试
+go test -v -run 'TestParseToolCalls|TestRepair' ./internal/util/
+
+# 一键端到端全链路测试（真实账号）
 ./tests/scripts/run-live.sh
 
-# 或自定义参数
-go run ./cmd/ds2api-tests \
-  --config config.json \
-  --admin-key admin \
-  --out artifacts/testsuite \
-  --timeout 120 \
-  --retries 2
-```
-
-```bash
 # 发布前阻断门禁
 ./tests/scripts/check-stage6-manual-smoke.sh
-./tests/scripts/check-refactor-line-gate.sh
-./tests/scripts/run-unit-all.sh
 npm ci --prefix webui && npm run build --prefix webui
 ```
 
-## 测试
-
 详细测试指南请参阅 [docs/TESTING.md](docs/TESTING.md)。
 
-### 快速测试命令
+## 本地开发抓包工具
+
+用于定位「responses 思考流/工具调用」等问题。开启后会自动记录最近 N 条上游请求体与响应体。
+
+启用示例：
 
 ```bash
-# 运行所有单元测试
-go test ./...
-
-# 运行 tool calls 相关测试（调试工具调用问题）
-go test -v -run 'TestParseToolCalls|TestRepair' ./internal/util/
-
-# 运行端到端测试
-./tests/scripts/run-live.sh
+DS2API_DEV_PACKET_CAPTURE=true go run ./cmd/ds2api
 ```
+
+查询/清空（需 Admin JWT）：
+- `GET /admin/dev/captures` — 查看抓包列表
+- `DELETE /admin/dev/captures` — 清空抓包
 
 ## Release 自动构建（GitHub Actions）
 
 工作流文件：`.github/workflows/release-artifacts.yml`
 
-- **触发条件**：仅在 GitHub Release `published` 时触发（普通 push 不会触发）
-- **构建产物**：多平台二进制包（`linux/amd64`、`linux/arm64`、`darwin/amd64`、`darwin/arm64`、`windows/amd64`）+ `sha256sums.txt`
-- **容器镜像发布**：仅推送到 GHCR（`ghcr.io/cjackhwang/ds2api`）
-- **每个压缩包包含**：`ds2api` 可执行文件、`static/admin`、WASM 文件（同时支持内置 fallback）、配置示例、README、LICENSE
+- **触发条件**：仅在 GitHub Release `published` 时触发
+- **构建产物**：多平台二进制包（linux/amd64、linux/arm64、darwin/amd64、darwin/arm64、windows/amd64）
+- **每个压缩包包含**：`ds2api` 可执行文件、`static/admin`、WASM 文件、配置示例、README、LICENSE
 
 ## 免责声明
 
