@@ -2,7 +2,7 @@
   <img src="webui/public/ds2api-favicon.svg" width="128" height="128" alt="DS2API icon" />
 </p>
 
-# DS2API
+# WEB2API
 
 [![License](https://img.shields.io/github/license/fssl168/ds2api.svg)](LICENSE)
 ![Stars](https://img.shields.io/github/stars/fssl168/ds2api.svg)
