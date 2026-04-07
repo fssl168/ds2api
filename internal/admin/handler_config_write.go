@@ -70,7 +70,7 @@ func (h *Handler) updateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Pool.Reset()
-	audit("update_config", "config updated (keys/accounts/mapping changed)", r)
+	AuditLogAppend("update_config", "config updated (keys/accounts/mapping changed)", r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "配置已更新"})
 }
 
@@ -96,7 +96,7 @@ func (h *Handler) addKey(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"detail": err.Error()})
 		return
 	}
-	audit("add_key", fmt.Sprintf("key added (prefix=%s...)", maskKey(key)), r)
+	AuditLogAppend("add_key", fmt.Sprintf("key added (prefix=%s...)", maskKey(key)), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "total_keys": len(h.Store.Snapshot().Keys)})
 }
 
@@ -120,7 +120,7 @@ func (h *Handler) deleteKey(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]any{"detail": err.Error()})
 		return
 	}
-	audit("delete_key", fmt.Sprintf("key deleted (prefix=%s...)", maskKey(key)), r)
+	AuditLogAppend("delete_key", fmt.Sprintf("key deleted (prefix=%s...)", maskKey(key)), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "total_keys": len(h.Store.Snapshot().Keys)})
 }
 
@@ -178,7 +178,7 @@ func (h *Handler) batchImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Pool.Reset()
-	audit("batch_import", fmt.Sprintf("imported %d keys, %d accounts", importedKeys, importedAccounts), r)
+	AuditLogAppend("batch_import", fmt.Sprintf("imported %d keys, %d accounts", importedKeys, importedAccounts), r)
 	writeJSON(w, http.StatusOK, map[string]any{"success": true, "imported_keys": importedKeys, "imported_accounts": importedAccounts})
 }
 

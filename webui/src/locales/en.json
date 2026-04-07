@@ -24,6 +24,10 @@
         "settings": {
             "label": "Settings",
             "desc": "Edit runtime and security settings online"
+        },
+        "audit": {
+            "label": "Audit Log",
+            "desc": "View recent administrative operation records"
         }
     },
     "sidebar": {

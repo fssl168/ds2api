@@ -107,7 +107,7 @@ func (h *Handler) updateSettingsPassword(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"detail": err.Error()})
 		return
 	}
-	audit("update_password", "admin password changed (all sessions invalidated)", r)
+	AuditLogAppend("update_password", "admin password changed (all sessions invalidated)", r)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success":              true,
 		"message":              "password updated",
