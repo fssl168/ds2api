@@ -49,7 +49,7 @@ func NewClient(store *config.Store, resolver *auth.Resolver) *Client {
 		stream:     trans.New(0),
 		fallback:   &http.Client{Timeout: 60 * time.Second},
 		fallbackS:  &http.Client{Timeout: 0},
-		powSolver:  NewPowSolver(config.WASMPath()),
+		powSolver:  NewPowSolver(""),
 		maxRetries: 3,
 	}
 }

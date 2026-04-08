@@ -183,8 +183,8 @@ func handlePoolStatus(_ context.Context, arguments json.RawMessage) (*ToolResult
 	if params.PoolType == "all" || params.PoolType == "deepseek" {
 		dsStatus := map[string]interface{}{
 			"type":           "deepseek",
-			"description":    "DeepSeek account pool with PoW WASM protection",
-			"features":       []string{"auto_token_refresh", "email_mobile_login", "pow_wasm", "concurrent_queue", "wait_queue"},
+			"description":    "DeepSeek account pool with native PoW protection",
+			"features":       []string{"auto_token_refresh", "email_mobile_login", "pow_native", "concurrent_queue", "wait_queue"},
 			"inflight_limit": 2,
 		}
 		poolStatus["deepseek"] = dsStatus

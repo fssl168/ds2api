@@ -49,9 +49,9 @@ func NewApp() *App {
 		config.Logger.Info("[QWEN] client initialized", "tickets", len(qwenClient.Tickets()))
 	}
 	if err := dsClient.PreloadPow(context.Background()); err != nil {
-		config.Logger.Warn("[WASM] preload failed", "error", err)
+		config.Logger.Warn("[PoW] solver init failed", "error", err)
 	} else {
-		config.Logger.Info("[WASM] module preloaded", "path", config.WASMPath())
+		config.Logger.Info("[PoW] native Go solver active")
 	}
 
 	openaiHandler := &openai.Handler{Store: store, Auth: resolver, DS: dsClient, QW: qwenClient}

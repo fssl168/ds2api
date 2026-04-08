@@ -3,66 +3,71 @@ package deepseek
 import (
 	"context"
 	"testing"
-	"time"
+
+	"ds2api/pow"
 )
 
-func TestPowPoolSizeFromEnv(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "3")
-	if got := powPoolSizeFromEnv(); got != 3 {
-		t.Fatalf("expected pool size 3, got %d", got)
+func TestPowSolverCompute(t *testing.T) {
+	solver := NewPowSolver("")
+	challenge := map[string]any{
+		"algorithm":   "DeepSeekHashV1",
+		"challenge":   "test_challenge",
+		"salt":        "test_salt",
+		"expire_at":   float64(1680000000),
+		"difficulty":  100,
+		"signature":   "sig",
+		"target_path": "/chat/completions",
+	}
+	answer, err := solver.Compute(context.Background(), challenge)
+	if err != nil {
+		t.Fatalf("compute failed: %v", err)
+	}
+	if answer <= 0 {
+		t.Fatalf("expected positive nonce, got %d", answer)
 	}
 }
 
-func TestPowSolverAcquireReleaseReusesModule(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "1")
-	solver := NewPowSolver("missing-file.wasm")
-	if err := solver.init(context.Background()); err != nil {
-		t.Fatalf("init failed: %v", err)
+func TestPowSolverUnsupportedAlgorithm(t *testing.T) {
+	solver := NewPowSolver("")
+	challenge := map[string]any{
+		"algorithm": "UnknownAlgorithm",
 	}
-
-	pm1, err := solver.acquireModule(context.Background())
-	if err != nil {
-		t.Fatalf("acquire first module failed: %v", err)
-	}
-	solver.releaseModule(pm1)
-
-	pm2, err := solver.acquireModule(context.Background())
-	if err != nil {
-		t.Fatalf("acquire second module failed: %v", err)
-	}
-	if pm1 != pm2 {
-		t.Fatalf("expected pooled module reuse, got different instances")
-	}
-	solver.releaseModule(pm2)
-}
-
-func TestPowSolverAcquireHonorsContextWhenPoolExhausted(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "1")
-	solver := NewPowSolver("missing-file.wasm")
-	if err := solver.init(context.Background()); err != nil {
-		t.Fatalf("init failed: %v", err)
-	}
-
-	held, err := solver.acquireModule(context.Background())
-	if err != nil {
-		t.Fatalf("acquire held module failed: %v", err)
-	}
-	defer solver.releaseModule(held)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
-	defer cancel()
-	if _, err := solver.acquireModule(ctx); err == nil {
-		t.Fatalf("expected context cancellation while pool is exhausted")
+	_, err := solver.Compute(context.Background(), challenge)
+	if err == nil {
+		t.Fatal("expected error for unsupported algorithm")
 	}
 }
 
-func TestClientPreloadPowUsesClientSolver(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "1")
+func TestBuildPowHeader(t *testing.T) {
+	challenge := map[string]any{
+		"algorithm":   "DeepSeekHashV1",
+		"challenge":   "abc",
+		"salt":        "salt123",
+		"answer":      int64(42),
+		"signature":   "test_sig",
+		"target_path": "/chat/completions",
+	}
+	header, err := BuildPowHeader(challenge, 42)
+	if err != nil {
+		t.Fatalf("BuildPowHeader failed: %v", err)
+	}
+	if len(header) == 0 {
+		t.Fatal("expected non-empty header")
+	}
+}
+
+func TestNativeSolvePow(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := pow.SolvePow(ctx, "test", "salt", 1680000000, 144000)
+	if err != context.Canceled {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestClientPreloadPowNoop(t *testing.T) {
 	client := NewClient(nil, nil)
 	if err := client.PreloadPow(context.Background()); err != nil {
-		t.Fatalf("preload failed: %v", err)
-	}
-	if client.powSolver.runtime == nil || client.powSolver.compiled == nil {
-		t.Fatalf("expected client pow solver to be initialized")
+		t.Fatalf("PreloadPow should be noop, got: %v", err)
 	}
 }

@@ -105,32 +105,6 @@ func TestBuildPowHeaderEmptyChallenge(t *testing.T) {
 	}
 }
 
-// ─── PowSolver pool size ─────────────────────────────────────────────
-
-func TestPowPoolSizeFromEnvDefault(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "")
-	got := powPoolSizeFromEnv()
-	if got < 1 {
-		t.Fatalf("expected positive default pool size, got %d", got)
-	}
-}
-
-func TestPowPoolSizeFromEnvInvalid(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "abc")
-	got := powPoolSizeFromEnv()
-	if got < 1 {
-		t.Fatalf("expected positive default for invalid, got %d", got)
-	}
-}
-
-func TestPowPoolSizeFromEnvSpecificValue(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "5")
-	got := powPoolSizeFromEnv()
-	if got != 5 {
-		t.Fatalf("expected 5, got %d", got)
-	}
-}
-
 // ─── NewClient ───────────────────────────────────────────────────────
 
 func TestNewClientInitialState(t *testing.T) {
@@ -151,15 +125,11 @@ func TestNewClientPreloadPowIdempotent(t *testing.T) {
 	}
 }
 
-// ─── PowSolver init and module pool ──────────────────────────────────
+// ─── PowSolver native Go (no WASM pool) ──────────────────────────────
 
-func TestPowSolverPoolSizeMatchesEnv(t *testing.T) {
-	t.Setenv("DS2API_POW_POOL_SIZE", "2")
-	solver := NewPowSolver("test.wasm")
-	if err := solver.init(context.Background()); err != nil {
-		t.Fatalf("init failed: %v", err)
-	}
-	if cap(solver.pool) != 2 {
-		t.Fatalf("expected pool capacity 2, got %d", cap(solver.pool))
+func TestPowSolverNativeNoopInit(t *testing.T) {
+	solver := NewPowSolver("")
+	if solver == nil {
+		t.Fatal("expected non-nil solver")
 	}
 }
