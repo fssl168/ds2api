@@ -7,7 +7,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/refraction-networking/utls v1.8.1
-	github.com/tetratelabs/wazero v1.9.0
+	
 )
 
 require (

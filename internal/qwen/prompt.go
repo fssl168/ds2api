@@ -6,9 +6,9 @@ import (
 )
 
 type L2Message struct {
-	Content   string `json:"content"`
-	MimeType  string `json:"mime_type"`
-	MetaData  *L2MetaData `json:"meta_data,omitempty"`
+	Content  string      `json:"content"`
+	MimeType string      `json:"mime_type"`
+	MetaData *L2MetaData `json:"meta_data,omitempty"`
 }
 
 type L2MetaData struct {
@@ -57,25 +57,34 @@ func extractTextFromMap(msg map[string]any) string {
 
 func resolveModelName(rawModel string) string {
 	modelMap := map[string]string{
-		"qwen/Qwen":              "Qwen",
-		"qwen/qwen":              "Qwen",
-		"qwen":                   "Qwen",
-		"qwen/Qwen3-Max":         "Qwen3-Max",
-		"qwen/qwen-max":          "Qwen3-Max",
-		"qwen-max":               "Qwen3-Max",
-		"qwen/Qwen3-Plus":        "Qwen3-Plus",
-		"qwen/qwen-plus":         "Qwen3-Plus",
-		"qwen-plus":              "Qwen3-Plus",
-		"qwen/Qwen3-Coder":       "Qwen3-Coder",
-		"qwen/qwen-coder":        "Qwen3-Coder",
-		"qwen-coder":             "Qwen3-Coder",
-		"qwen/Qwen3-Flash":       "Qwen3-Flash",
-		"qwen/qwen-flash":        "Qwen3-Flash",
-		"qwen-flash":             "Qwen3-Flash",
-		"qwen/Qwen3.5-Plus":      "Qwen3.5-Plus",
-		"qwen/qwen3.5-plus":      "Qwen3.5-Plus",
-		"qwen/Qwen3.5-Flash":     "Qwen3.5-Flash",
-		"qwen/qwen3.5-flash":     "Qwen3.5-Flash",
+		"qwen/Qwen":                    "Qwen",
+		"qwen/qwen":                    "Qwen",
+		"qwen":                         "Qwen",
+		"qwen/Qwen3-Max":               "Qwen3-Max",
+		"qwen/qwen-max":                "Qwen3-Max",
+		"qwen-max":                     "Qwen3-Max",
+		"qwen/Qwen3-Max-Thinking":      "Qwen3-Max-Thinking",
+		"qwen/qwen-max-thinking":       "Qwen3-Max-Thinking",
+		"qwen-max-thinking":            "Qwen3-Max-Thinking",
+		"qwen/Qwen3-Plus":              "Qwen3-Plus",
+		"qwen/qwen-plus":               "Qwen3-Plus",
+		"qwen-plus":                    "Qwen3-Plus",
+		"qwen/Qwen3-Coder":             "Qwen3-Coder",
+		"qwen/qwen-coder":              "Qwen3-Coder",
+		"qwen-coder":                   "Qwen3-Coder",
+		"qwen/Qwen3-Flash":             "Qwen3-Flash",
+		"qwen/qwen-flash":              "Qwen3-Flash",
+		"qwen-flash":                   "Qwen3-Flash",
+		"qwen/Qwen3.5-Plus":            "Qwen3.5-Plus",
+		"qwen/qwen3.5-plus":            "Qwen3.5-Plus",
+		"qwen/Qwen3.5-Flash":           "Qwen3.5-Flash",
+		"qwen/qwen3.5-flash":           "Qwen3.5-Flash",
+		"qwen/Qwen3.6-Plus":            "Qwen3.6-Plus",
+		"qwen/qwen3.6-plus":            "Qwen3.6-Plus",
+		"qwen3.6-plus":                 "Qwen3.6-Plus",
+		"qwen/Qwen3.6-Plus-2026-04-02": "Qwen3.6-Plus-2026-04-02",
+		"qwen/qwen3.6-plus-2026-04-02": "Qwen3.6-Plus-2026-04-02",
+		"qwen3.6-plus-2026-04-02":      "Qwen3.6-Plus-2026-04-02",
 	}
 	if m, ok := modelMap[rawModel]; ok {
 		return m

@@ -53,51 +53,33 @@ export default function ApiTesterContainer({ config, onMessage, authFetch }) {
     const customKeyManaged = customKeyActive && configuredKeys.includes(trimmedApiKey)
 
     const models = [
-        // Qwen3.6 系列
-        { id: 'qwen3.6-plus', name: 'qwen3.6-plus', icon: 'Sparkles', desc: 'Qwen3.6 旗舰版，最强性能', color: 'text-purple-600' },
-        { id: 'qwen3.6-plus-2026-04-02', name: 'qwen3.6-plus-2026-04-02', icon: 'Calendar', desc: 'Qwen3.6 快照版', color: 'text-purple-500' },
-        
-        // Qwen3.5 系列
-        { id: 'qwen3.5-max', name: 'qwen3.5-max', icon: 'Crown', desc: 'Qwen3.5 最强版本', color: 'text-indigo-600' },
-        { id: 'qwen3.5-plus', name: 'qwen3.5-plus', icon: 'Sparkles', desc: 'Qwen3.5 均衡版', color: 'text-indigo-500' },
-        { id: 'qwen3.5-plus-2026-02-15', name: 'qwen3.5-plus-2026-02-15', icon: 'Calendar', desc: 'Qwen3.5 快照版', color: 'text-indigo-400' },
-        { id: 'qwen3.5-flash', name: 'qwen3.5-flash', icon: 'Zap', desc: 'Qwen3.5 轻量快速版', color: 'text-emerald-500' },
-        { id: 'qwen3.5-flash-2026-02-15', name: 'qwen3.5-flash-2026-02-15', icon: 'Calendar', desc: 'Qwen3.5 Flash 快照版', color: 'text-emerald-400' },
-        
-        // Qwen3 系列
-        { id: 'qwen3-max', name: 'qwen3-max', icon: 'Crown', desc: 'Qwen3 最强版本', color: 'text-blue-600' },
-        { id: 'qwen3-235b-a22b', name: 'qwen3-235b-a22b', icon: 'Cpu', desc: 'Qwen3 MoE 旗舰模型', color: 'text-blue-500' },
-        { id: 'qwen3-32b', name: 'qwen3-32b', icon: 'Box', desc: 'Qwen3 稠密版，企业部署首选', color: 'text-cyan-500' },
-        
-        // Qwen 经典系列
-        { id: 'qwen-plus', name: 'qwen-plus', icon: 'MessageSquare', desc: 'Qwen 均衡版，性价比高', color: 'text-blue-500' },
-        { id: 'qwen-plus-latest', name: 'qwen-plus-latest', icon: 'Globe', desc: 'Qwen 最新版', color: 'text-blue-400' },
-        { id: 'qwen-plus-2024-12-20', name: 'qwen-plus-2024-12-20', icon: 'Calendar', desc: 'Qwen 快照版', color: 'text-blue-300' },
-        { id: 'qwen-max', name: 'qwen-max', icon: 'Crown', desc: 'Qwen 旗舰版', color: 'text-blue-600' },
-        { id: 'qwen-turbo', name: 'qwen-turbo', icon: 'Zap', desc: 'Qwen 轻量快速版', color: 'text-green-500' },
-        { id: 'qwen-long', name: 'qwen-long', icon: 'FileText', desc: 'Qwen 长文本版，支持 1M 上下文', color: 'text-orange-500' },
-        
-        // Qwen-VL 多模态系列
-        { id: 'qwen-vl-max', name: 'qwen-vl-max', icon: 'Image', desc: 'Qwen 视觉旗舰版', color: 'text-pink-600' },
-        { id: 'qwen-vl-plus', name: 'qwen-vl-plus', icon: 'Image', desc: 'Qwen 视觉均衡版', color: 'text-pink-500' },
-        { id: 'qwen-vl-v1', name: 'qwen-vl-v1', icon: 'Image', desc: 'Qwen 视觉初代版', color: 'text-pink-400' },
-        
-        // Qwen-MT 翻译系列
-        { id: 'qwen-mt-plus', name: 'qwen-mt-plus', icon: 'Languages', desc: 'Qwen 翻译均衡版', color: 'text-teal-500' },
-        { id: 'qwen-mt-turbo', name: 'qwen-mt-turbo', icon: 'Languages', desc: 'Qwen 翻译快速版', color: 'text-teal-400' },
-        
-        // Qwen-Coder 代码生成系列
-        { id: 'qwen3-coder-next', name: 'qwen3-coder-next', icon: 'Code', desc: 'Qwen3 代码生成推荐版', color: 'text-violet-600' },
-        { id: 'qwen3-coder-plus', name: 'qwen3-coder-plus', icon: 'Code', desc: 'Qwen3 代码生成增强版', color: 'text-violet-500' },
-        { id: 'qwen3-coder-flash', name: 'qwen3-coder-flash', icon: 'Code', desc: 'Qwen3 代码生成快速版', color: 'text-violet-400' },
-        { id: 'qwen3-coder-480B', name: 'qwen3-coder-480B', icon: 'Code', desc: 'Qwen3 代码生成旗舰版', color: 'text-violet-700' },
-        { id: 'qwen-coder-turbo', name: 'qwen-coder-turbo', icon: 'Code', desc: 'Qwen 代码生成快速版', color: 'text-indigo-500' },
+        // Qwen 系列 (与后端 qianwen.com Web API 支持的模型保持一致)
+        { id: 'qwen', name: 'qwen', icon: 'MessageSquare', desc: 'Qwen 基础版', color: 'text-blue-500' },
+        { id: 'qwen-max', name: 'qwen-max', icon: 'Crown', desc: 'Qwen3-Max 最强版本', color: 'text-blue-600' },
+        { id: 'qwen-max-thinking', name: 'qwen-max-thinking', icon: 'Brain', desc: 'Qwen3-Max-Thinking 深度思考版', color: 'text-violet-600' },
+        { id: 'qwen-plus', name: 'qwen-plus', icon: 'Sparkles', desc: 'Qwen3-Plus 均衡版', color: 'text-blue-500' },
+        { id: 'qwen-coder', name: 'qwen-coder', icon: 'Code', desc: 'Qwen3-Coder 代码生成版', color: 'text-violet-500' },
+        { id: 'qwen-flash', name: 'qwen-flash', icon: 'Zap', desc: 'Qwen3-Flash 轻量快速版', color: 'text-emerald-500' },
+        { id: 'qwen3.5-plus', name: 'qwen3.5-plus', icon: 'Sparkles', desc: 'Qwen3.5-Plus 均衡版', color: 'text-indigo-500' },
+        { id: 'qwen3.5-flash', name: 'qwen3.5-flash', icon: 'Zap', desc: 'Qwen3.5-Flash 轻量快速版', color: 'text-emerald-500' },
+        { id: 'qwen3.6-plus', name: 'qwen3.6-plus', icon: 'Sparkles', desc: 'Qwen3.6-Plus 旗舰版', color: 'text-purple-600' },
+        { id: 'qwen3.6-plus-2026-04-02', name: 'qwen3.6-plus-2026-04-02', icon: 'Calendar', desc: 'Qwen3.6-Plus 快照版', color: 'text-purple-500' },
         
         // DeepSeek 系列
         { id: 'deepseek-chat', name: 'deepseek-chat', icon: 'MessageSquare', desc: t('apiTester.models.chat'), color: 'text-amber-500' },
         { id: 'deepseek-reasoner', name: 'deepseek-reasoner', icon: 'Cpu', desc: t('apiTester.models.reasoner'), color: 'text-amber-600' },
         { id: 'deepseek-chat-search', name: 'deepseek-chat-search', icon: 'SearchIcon', desc: t('apiTester.models.chatSearch'), color: 'text-cyan-500' },
         { id: 'deepseek-reasoner-search', name: 'deepseek-reasoner-search', icon: 'SearchIcon', desc: t('apiTester.models.reasonerSearch'), color: 'text-cyan-600' },
+        // DeepSeek Expert 系列
+        { id: 'deepseek-expert-chat', name: 'deepseek-expert-chat', icon: 'Award', desc: 'DeepSeek 专家聊天版', color: 'text-purple-500' },
+        { id: 'deepseek-expert-reasoner', name: 'deepseek-expert-reasoner', icon: 'Brain', desc: 'DeepSeek 专家推理版', color: 'text-purple-600' },
+        { id: 'deepseek-expert-chat-search', name: 'deepseek-expert-chat-search', icon: 'SearchIcon', desc: 'DeepSeek 专家聊天搜索版', color: 'text-indigo-500' },
+        { id: 'deepseek-expert-reasoner-search', name: 'deepseek-expert-reasoner-search', icon: 'SearchIcon', desc: 'DeepSeek 专家推理搜索版', color: 'text-indigo-600' },
+        // DeepSeek Vision 系列
+        { id: 'deepseek-vision-chat', name: 'deepseek-vision-chat', icon: 'Image', desc: 'DeepSeek 视觉聊天版', color: 'text-pink-500' },
+        { id: 'deepseek-vision-reasoner', name: 'deepseek-vision-reasoner', icon: 'Image', desc: 'DeepSeek 视觉推理版', color: 'text-pink-600' },
+        { id: 'deepseek-vision-chat-search', name: 'deepseek-vision-chat-search', icon: 'Image', desc: 'DeepSeek 视觉聊天搜索版', color: 'text-rose-500' },
+        { id: 'deepseek-vision-reasoner-search', name: 'deepseek-vision-reasoner-search', icon: 'Image', desc: 'DeepSeek 视觉推理搜索版', color: 'text-rose-600' },
     ]
 
     const { runTest, stopGeneration } = useChatStreamClient({

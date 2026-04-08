@@ -1,6 +1,7 @@
 package sse
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -33,8 +34,12 @@ func CollectStream(resp *http.Response, thinkingEnabled bool, closeBody bool) Co
 	}
 	contentFilter := false
 	_ = deepseek.ScanSSELines(resp, func(line []byte) bool {
+		// 调试：打印原始行
+		fmt.Printf("[DEBUG] Raw line: %s\n", string(line))
 		result := ParseDeepSeekContentLine(line, thinkingEnabled, currentType)
 		currentType = result.NextType
+		// 调试：打印解析结果
+		fmt.Printf("[DEBUG] Parsed: %v, Stop: %v, Parts: %v\n", result.Parsed, result.Stop, result.Parts)
 		if !result.Parsed {
 			return true
 		}
@@ -53,5 +58,7 @@ func CollectStream(resp *http.Response, thinkingEnabled bool, closeBody bool) Co
 		}
 		return true
 	})
+	// 调试：打印最终结果
+	fmt.Printf("[DEBUG] Final text: '%s', thinking: '%s'\n", text.String(), thinking.String())
 	return CollectResult{Text: text.String(), Thinking: thinking.String(), ContentFilter: contentFilter}
 }

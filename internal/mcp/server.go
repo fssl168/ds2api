@@ -14,10 +14,10 @@ import (
 type ToolHandler func(ctx context.Context, arguments json.RawMessage) (*ToolResult, error)
 
 type Server struct {
-	mu       sync.RWMutex
-	handlers map[string]ToolHandler
-	tools    []Tool
-	store    *config.Store
+	mu         sync.RWMutex
+	handlers   map[string]ToolHandler
+	tools      []Tool
+	store      *config.Store
 	serverInfo ImplementationInfo
 }
 
@@ -98,7 +98,7 @@ Supported model prefixes:
 	return resp
 }
 
-func (s *Server) handleListTools(ctx context.Context, id interface{}, params json.RawMessage) *JSONRPCResponse {
+func (s *Server) handleListTools(_ context.Context, id interface{}, params json.RawMessage) *JSONRPCResponse {
 	var p ListToolsParams
 	if len(params) > 0 && string(params) != "{}" && string(params) != "null" {
 		json.Unmarshal(params, &p)
@@ -128,7 +128,7 @@ func (s *Server) handleCallTool(ctx context.Context, id interface{}, params json
 		return &JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      id,
-			Result:  mustMarshal(ToolResult{
+			Result: mustMarshal(ToolResult{
 				Content: []TextContent{{Type: "text", Text: err.Error()}},
 				IsError: true,
 			}),

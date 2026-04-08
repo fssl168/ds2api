@@ -7,6 +7,7 @@ import RuntimeSection from './RuntimeSection'
 import BehaviorSection from './BehaviorSection'
 import AutoDeleteSection from './AutoDeleteSection'
 import ModelSection from './ModelSection'
+import CompatibilitySection from './CompatibilitySection'
 import BackupSection from './BackupSection'
 
 export default function SettingsContainer({ onRefresh, onMessage, authFetch, onForceLogout, isVercel = false }) {
@@ -97,6 +98,8 @@ export default function SettingsContainer({ onRefresh, onMessage, authFetch, onF
             <AutoDeleteSection t={t} form={form} setForm={setForm} />
 
             <ModelSection t={t} form={form} setForm={setForm} />
+
+            <CompatibilitySection t={t} form={form} setForm={setForm} />
 
             <BackupSection
                 t={t}

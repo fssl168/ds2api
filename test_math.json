@@ -1,1 +1,0 @@
-{"model": "qwen-plus", "messages": [{"role": "user", "content": "1+1等于几？只回答数字"}], "stream": true}

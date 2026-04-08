@@ -24,7 +24,7 @@ func (p *PowSolver) Compute(ctx context.Context, challenge map[string]any) (int6
 	expireAt := toInt64(challenge["expire_at"], 1680000000)
 	difficulty := toInt64FromFloat(challenge["difficulty"], 144000)
 
-	return pow.SolvePow(ctx, challengeStr, salt, expireAt, float64(difficulty))
+	return pow.SolvePow(ctx, challengeStr, salt, expireAt, difficulty)
 }
 
 func BuildPowHeader(challenge map[string]any, answer int64) (string, error) {

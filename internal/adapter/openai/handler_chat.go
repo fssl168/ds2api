@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,6 +23,13 @@ import (
 	"ds2api/internal/util"
 )
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	if isVercelStreamReleaseRequest(r) {
 		h.handleVercelStreamRelease(w, r)
@@ -39,7 +47,10 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 	rawModel, _ := req["model"].(string)
 	useQwen := isQwenModel(rawModel)
+	var resp *http.Response
+	var sessionID string
 
+	// 正常模式：执行完整的认证和会话逻辑
 	var a *auth.RequestAuth
 	var err error
 	if useQwen {
@@ -130,7 +141,7 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID, err := h.DS.CreateSession(r.Context(), a, 3)
+	sessionID, err = h.DS.CreateSession(r.Context(), a, 3)
 	if err != nil {
 		sessionErr = err
 		if a.UseConfigToken {
@@ -147,7 +158,7 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	payload := stdReq.CompletionPayload(sessionID)
-	resp, err := h.DS.CallCompletion(r.Context(), a, payload, pow, 3)
+	resp, err = h.DS.CallCompletion(r.Context(), a, payload, pow, 3)
 	if err != nil {
 		sessionErr = err
 		writeOpenAIError(w, http.StatusInternalServerError, "Failed to get completion.")
@@ -253,7 +264,8 @@ func (h *Handler) handleQwenNonStream(w http.ResponseWriter, _ context.Context, 
 	}
 	result := collectQwenStream(resp, true)
 	finalText := sanitizeLeakedOutput(result.Text)
-	respBody := openaifmt.BuildChatCompletion(completionID, model, finalPrompt, "", finalText, nil)
+	finalThinking := result.Thinking
+	respBody := openaifmt.BuildChatCompletion(completionID, model, finalPrompt, finalThinking, finalText, nil)
 	writeJSON(w, http.StatusOK, respBody)
 }
 
@@ -283,15 +295,23 @@ func (h *Handler) handleQwenStream(w http.ResponseWriter, _ *http.Request, resp 
 		if event.Done {
 			break
 		}
-		if event.Text == "" {
-			continue
+		if event.Thinking != "" {
+			chunk := buildStreamThinkingChunk(completionID, created, model, event.Thinking)
+			w.Write([]byte("data: "))
+			w.Write(chunk)
+			w.Write([]byte("\n\n"))
+			if canFlush {
+				flusher.Flush()
+			}
 		}
-		chunk := buildStreamTextChunk(completionID, created, model, event.Text)
-		w.Write([]byte("data: "))
-		w.Write(chunk)
-		w.Write([]byte("\n\n"))
-		if canFlush {
-			flusher.Flush()
+		if event.Text != "" {
+			chunk := buildStreamTextChunk(completionID, created, model, event.Text)
+			w.Write([]byte("data: "))
+			w.Write(chunk)
+			w.Write([]byte("\n\n"))
+			if canFlush {
+				flusher.Flush()
+			}
 		}
 		rc.SetWriteDeadline(time.Now().Add(30 * time.Second))
 	}
@@ -322,12 +342,19 @@ func collectQwenStream(resp *http.Response, closeBody bool) sse.CollectResult {
 	if closeBody {
 		defer resp.Body.Close()
 	}
-	text := ""
+	text := strings.Builder{}
+	thinking := strings.Builder{}
 	scanner := qwen.NewQwenSSEScanner(resp.Body)
 	for scanner.Next() {
-		text += scanner.Event().Text
+		event := scanner.Event()
+		if event.Text != "" {
+			text.WriteString(event.Text)
+		}
+		if event.Thinking != "" {
+			thinking.WriteString(event.Thinking)
+		}
 	}
-	return sse.CollectResult{Text: text}
+	return sse.CollectResult{Text: text.String(), Thinking: thinking.String()}
 }
 
 func isQwenModel(model string) bool {
@@ -362,10 +389,16 @@ func (h *Handler) handleNonStream(w http.ResponseWriter, ctx context.Context, re
 		return
 	}
 	_ = ctx
+	// 调试：读取并打印原始响应内容
+	rawBody, _ := io.ReadAll(resp.Body)
+	config.Logger.Info("[deepseek] raw response", "body", string(rawBody[:min(len(rawBody), 2000)]))
+	// 重置响应体
+	resp.Body = io.NopCloser(bytes.NewReader(rawBody))
 	result := sse.CollectStream(resp, thinkingEnabled, true)
 
 	finalThinking := result.Thinking
 	finalText := sanitizeLeakedOutput(result.Text)
+	config.Logger.Info("[deepseek] parsed result", "text", finalText, "thinking", finalThinking)
 	respBody := openaifmt.BuildChatCompletion(completionID, model, finalPrompt, finalThinking, finalText, toolNames)
 	writeJSON(w, http.StatusOK, respBody)
 }
@@ -437,6 +470,18 @@ func buildStreamTextChunk(id string, created int64, model, text string) []byte {
 	choices := []map[string]any{
 		{
 			"delta": map[string]any{"content": text},
+			"index": 0,
+		},
+	}
+	chunk := openaifmt.BuildChatStreamChunk(id, created, model, choices, nil)
+	out, _ := json.Marshal(chunk)
+	return out
+}
+
+func buildStreamThinkingChunk(id string, created int64, model, thinking string) []byte {
+	choices := []map[string]any{
+		{
+			"delta": map[string]any{"reasoning_content": thinking},
 			"index": 0,
 		},
 	}

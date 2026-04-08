@@ -66,10 +66,19 @@ func (c *Client) CreateSession(ctx context.Context, a *auth.RequestAuth, maxAtte
 		if status == http.StatusOK && code == 0 && bizCode == 0 {
 			data, _ := resp["data"].(map[string]any)
 			bizData, _ := data["biz_data"].(map[string]any)
+			// 兼容新旧响应结构
 			sessionID, _ := bizData["id"].(string)
+			if sessionID == "" {
+				// 新结构：session ID 在 chat_session.id 中
+				if chatSession, ok := bizData["chat_session"].(map[string]any); ok {
+					sessionID, _ = chatSession["id"].(string)
+				}
+			}
 			if sessionID != "" {
 				return sessionID, nil
 			}
+			// 调试：打印完整响应结构
+			config.Logger.Warn("[create_session] no session ID in response", "resp", resp, "data", data, "biz_data", bizData, "account", a.AccountID)
 		}
 		config.Logger.Warn("[create_session] failed", "status", status, "code", code, "biz_code", bizCode, "msg", msg, "biz_msg", bizMsg, "use_config_token", a.UseConfigToken, "account", a.AccountID)
 		if a.UseConfigToken {
