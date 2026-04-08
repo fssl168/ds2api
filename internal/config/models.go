@@ -19,6 +19,14 @@ var DeepSeekModels = []ModelInfo{
 	{ID: "deepseek-reasoner", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
 	{ID: "deepseek-chat-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
 	{ID: "deepseek-reasoner-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-expert-chat", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-expert-reasoner", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-expert-chat-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-expert-reasoner-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-vision-chat", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-vision-reasoner", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-vision-chat-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
+	{ID: "deepseek-vision-reasoner-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
 }
 
 var QwenModels = []ModelInfo{
@@ -139,6 +147,22 @@ func GetModelConfig(model string) (thinking bool, search bool, ok bool) {
 		return false, true, true
 	case "deepseek-reasoner-search":
 		return true, true, true
+	case "deepseek-expert-chat":
+		return false, false, true
+	case "deepseek-expert-reasoner":
+		return true, false, true
+	case "deepseek-expert-chat-search":
+		return false, true, true
+	case "deepseek-expert-reasoner-search":
+		return true, true, true
+	case "deepseek-vision-chat":
+		return false, false, true
+	case "deepseek-vision-reasoner":
+		return true, false, true
+	case "deepseek-vision-chat-search":
+		return false, true, true
+	case "deepseek-vision-reasoner-search":
+		return true, true, true
 	default:
 		return false, false, false
 	}
@@ -216,8 +240,26 @@ func ResolveModel(store ModelAliasReader, requested string) (string, bool) {
 		strings.Contains(model, "opus") ||
 		strings.Contains(model, "r1")
 	useSearch := strings.Contains(model, "search")
+	useExpert := strings.Contains(model, "expert")
+	useVision := strings.Contains(model, "vision")
 
 	switch {
+	case useVision && useReasoner && useSearch:
+		return "deepseek-vision-reasoner-search", true
+	case useVision && useReasoner:
+		return "deepseek-vision-reasoner", true
+	case useVision && useSearch:
+		return "deepseek-vision-chat-search", true
+	case useVision:
+		return "deepseek-vision-chat", true
+	case useExpert && useReasoner && useSearch:
+		return "deepseek-expert-reasoner-search", true
+	case useExpert && useReasoner:
+		return "deepseek-expert-reasoner", true
+	case useExpert && useSearch:
+		return "deepseek-expert-chat-search", true
+	case useExpert:
+		return "deepseek-expert-chat", true
 	case useReasoner && useSearch:
 		return "deepseek-reasoner-search", true
 	case useReasoner:

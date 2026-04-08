@@ -27,6 +27,19 @@ type Client struct {
 	maxRetries int
 }
 
+type accountClients struct {
+	regular  trans.Doer
+	fallback *http.Client
+}
+
+type proxyDoer struct {
+	client *http.Client
+}
+
+func (p *proxyDoer) Do(req *http.Request) (*http.Response, error) {
+	return p.client.Do(req)
+}
+
 func NewClient(store *config.Store, resolver *auth.Resolver) *Client {
 	return &Client{
 		Store:      store,
@@ -42,5 +55,14 @@ func NewClient(store *config.Store, resolver *auth.Resolver) *Client {
 }
 
 func (c *Client) PreloadPow(ctx context.Context) error {
-	return c.powSolver.init(ctx)
+	return nil
+}
+
+func (c *Client) requestClientsForAccount(proxyURL string) accountClients {
+	if proxyURL == "" {
+		return accountClients{regular: c.regular, fallback: c.fallback}
+	}
+	proxyTransport := trans.NewWithProxy(60*time.Second, proxyURL)
+	proxyClient := &http.Client{Timeout: 60 * time.Second, Transport: proxyTransport}
+	return accountClients{regular: &proxyDoer{client: proxyClient}, fallback: proxyClient}
 }

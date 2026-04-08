@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	utls "github.com/refraction-networking/utls"
@@ -31,6 +32,24 @@ func New(timeout time.Duration) *Client {
 		TLSClientConfig:     &tls.Config{MinVersion: tls.VersionTLS12},
 	}
 	return &Client{http: &http.Client{Timeout: timeout, Transport: base}}
+}
+
+func NewWithProxy(timeout time.Duration, proxyURL string) *http.Transport {
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil
+	}
+	base := &http.Transport{
+		Proxy:               http.ProxyURL(parsed),
+		ForceAttemptHTTP2:   false,
+		MaxIdleConns:        200,
+		MaxIdleConnsPerHost: 100,
+		IdleConnTimeout:     90 * time.Second,
+		DialContext:         (&net.Dialer{Timeout: 15 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		DialTLSContext:      safariTLSDialer(),
+		TLSClientConfig:     &tls.Config{MinVersion: tls.VersionTLS12},
+	}
+	return base
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
