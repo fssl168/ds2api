@@ -162,6 +162,31 @@ flowchart LR
 
 > Qwen 模型通过模型名前缀自动路由到通义千问引擎。
 
+### 上下文保护（客户端侧）
+
+> 默认 **关闭**，通过环境变量 `CONTEXT_PROTECTION=true` 启用。
+
+| 保护项 | 说明 | 触发条件 |
+| --- | --- | --- |
+| **消息数截断** | 超限时保留最新 N 条消息 | messages 数量 > MaxMessages |
+| **单消息截断** | rune 安全截断 + `[...truncated]` 标记 | 单条内容字符数 > MaxSingleMsgSize |
+| **Token 估算** | 字符数 ÷ charsPerToken（向上取整） | 始终执行（启用时） |
+| **max_tokens 钳制** | 限制在 `[请求值, 模型最大, 可用上下文]` 区间 | 用户传入 max_tokens > 模型限制或可用空间 |
+| **使用率告警** | 日志输出警告 | (input + output) / context_window > 95% |
+
+#### 各模型限制参数
+
+| 模型族 | 上下文窗口 | 最大输出 | 字符/Token | 最大消息数 | 单消息上限 |
+| --- | --- | --- | --- | --- | --- |
+| **qwen3.5-plus/flash** | 128K | 8,192 | 2.0 | 100 | 64K chars |
+| **qwen-flash** | 128K | 2,048 | 2.0 | 100 | 64K chars |
+| **qwen-max/plus** | 32K | 2,048 | 1.8 | 80 | 32K chars |
+| **qwen-coder** | 32K | 4,096 | 1.8 | 80 | 32K chars |
+| **deepseek-reasoner** | 64K | 8,192 | 3.0 | 100 | 48K chars |
+| **deepseek-chat 等** | 64K | 8,192 | 3.0 | 100 | 48K chars |
+
+> 完整变更记录参阅 [CHANGELOG.md](CHANGELOG.md)。
+
 ---
 
 ## 快速开始
@@ -311,6 +336,7 @@ ds2api/
 
 | 文档 | 说明 |
 | --- | --- |
+| [CHANGELOG.md](CHANGELOG.md) | 开发日志（版本变更记录） |
 | [API.md](API.md) | API 接口文档（含请求/响应示例） |
 | [DEPLOY.md](docs/DEPLOY.md) | 部署指南（本地/Docker/Vercel/systemd） |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | 贡献指南 |
