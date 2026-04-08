@@ -13,6 +13,7 @@ import (
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	openaifmt "ds2api/internal/format/openai"
+	"ds2api/internal/limits"
 	"ds2api/internal/qwen"
 	"ds2api/internal/sse"
 	streamengine "ds2api/internal/stream"
@@ -68,6 +69,29 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	r = r.WithContext(auth.WithAuth(r.Context(), a))
+
+	if limits.Enabled {
+		msgsRaw := extractMessagesFromRequest(req)
+		maxTok := 0
+		if v, ok := req["max_tokens"].(float64); ok && v > 0 {
+			maxTok = int(v)
+		} else if v, ok := req["max_tokens"].(int); ok && v > 0 {
+			maxTok = v
+		}
+		prot := limits.CheckAndProtect(rawModel, msgsRaw, maxTok)
+		if len(prot.Warnings) > 0 {
+			config.Logger.Warn(limits.JoinWarnings(prot.Warnings),
+				"model", rawModel, "input_tokens", prot.InputTokens,
+				"output_tokens", prot.OutputTokens, "context_usage_pct", prot.ContextUsage)
+		}
+		if prot.Truncated {
+			req["messages"] = prot.Messages
+		}
+		if prot.OutputTokens > 0 {
+			req["max_tokens"] = prot.OutputTokens
+		}
+	}
+
 	if useQwen && h.QW == nil {
 		writeOpenAIError(w, http.StatusServiceUnavailable, "Qwen backend not configured. Add qwen_accounts to config.json.")
 		return

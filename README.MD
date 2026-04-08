@@ -265,6 +265,7 @@ ds2api/
 │   ├── config/              # 配置加载与编解码
 │   ├── deepseek/            # DeepSeek 客户端 + PoW WASM
 │   ├── qwen/                # ★ 通义千问客户端 + QwenPool
+│   ├── limits/              # ★ 上下文保护（模型限制/Token估算/截断）
 │   ├── server/              # HTTP 路由（chi router）
 │   └── webui/               # WebUI 静态文件托管
 ├── webui/                   # React WebUI 源码（Vite + Tailwind）
@@ -302,6 +303,7 @@ ds2api/
 | `DS2API_CONFIG_JSON` | 配置注入（JSON 或 Base64） | — |
 | `CORS_ORIGIN` | CORS 允许的 Origin（空=*, 安全建议设具体值） | `*` |
 | `LOG_LEVEL` | 日志级别 | `INFO` |
+| **`CONTEXT_PROTECTION`** | **客户端上下文保护开关（true/1/on 启用）** | **false (关闭)** |
 
 ---
 

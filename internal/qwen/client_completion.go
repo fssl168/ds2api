@@ -55,6 +55,14 @@ func (c *Client) CallCompletion(ctx context.Context, _ *auth.RequestAuth, payloa
 		"biz_id":           "ai_qwen",
 	}
 
+	if mt, ok := payload["max_tokens"]; ok {
+		if v, ok := mt.(float64); ok && v > 0 {
+			bodyPayload["max_tokens"] = int(v)
+		} else if v, ok := mt.(int); ok && v > 0 {
+			bodyPayload["max_tokens"] = v
+		}
+	}
+
 	jsonBody, err := json.Marshal(bodyPayload)
 	if err != nil {
 		return nil, fmt.Errorf("marshal payload: %w", err)
