@@ -21,6 +21,73 @@ var DeepSeekModels = []ModelInfo{
 	{ID: "deepseek-reasoner-search", Object: "model", Created: 1677610602, OwnedBy: "deepseek", Permission: []any{}},
 }
 
+var QwenModels = []ModelInfo{
+	// 千问 Max 系列
+	{ID: "qwen3-max", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-max", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-max-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// 千问 Plus 系列
+	{ID: "qwen3.5-plus", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-plus", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-plus-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// 千问 Flash 系列
+	{ID: "qwen3.5-flash", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-flash", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// 千问 Turbo 系列
+	{ID: "qwen-turbo", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-turbo-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// 千问 Long 系列
+	{ID: "qwen-long", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-long-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// QwQ 推理系列
+	{ID: "qwq-plus", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwq-plus-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// Qwen-VL 视觉系列
+	{ID: "qwen-vl-max", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-vl-max-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-vl-plus", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-vl-plus-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// Qwen-Audio 语音系列
+	{ID: "qwen-audio-turbo", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-audio-turbo-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// Qwen-Omni 多模态系列
+	{ID: "qwen-omni-turbo", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-omni-turbo-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-omni-turbo-realtime", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-omni-turbo-realtime-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// Qwen-MT 翻译系列
+	{ID: "qwen-mt-plus", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-mt-plus-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-mt-turbo", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-mt-turbo-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// Qwen-Coder 代码生成系列
+	{ID: "qwen3-coder-next", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen3-coder-plus", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen3-coder-flash", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen3-coder-480B", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-coder-turbo", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-coder-turbo-latest", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen2.5-coder-7b-instruct", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen2.5-coder-14b-instruct", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen2.5-coder-32b-instruct", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+
+	// Qwen 其他系列
+	{ID: "qwen3.6", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen3-max-thinking", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-image-2.0", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+	{ID: "qwen-image-2.0-2026-03-03", Object: "model", Created: 1677610602, OwnedBy: "qwen", Permission: []any{}},
+}
+
 var ClaudeModels = []ModelInfo{
 	// Current aliases
 	{ID: "claude-opus-4-6", Object: "model", Created: 1715635200, OwnedBy: "anthropic"},
@@ -173,7 +240,10 @@ func lower(s string) string {
 }
 
 func OpenAIModelsResponse() map[string]any {
-	return map[string]any{"object": "list", "data": DeepSeekModels}
+	data := make([]ModelInfo, 0, len(DeepSeekModels)+len(QwenModels))
+	data = append(data, DeepSeekModels...)
+	data = append(data, QwenModels...)
+	return map[string]any{"object": "list", "data": data}
 }
 
 func OpenAIModelByID(store ModelAliasReader, id string) (ModelInfo, bool) {
@@ -181,7 +251,14 @@ func OpenAIModelByID(store ModelAliasReader, id string) (ModelInfo, bool) {
 	if !ok {
 		return ModelInfo{}, false
 	}
+	// Check DeepSeek models
 	for _, model := range DeepSeekModels {
+		if model.ID == canonical {
+			return model, true
+		}
+	}
+	// Check Qwen models
+	for _, model := range QwenModels {
 		if model.ID == canonical {
 			return model, true
 		}

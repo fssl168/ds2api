@@ -135,8 +135,24 @@ func (sm *SecurityManager) Register(ctx context.Context) error {
 	}
 
 	if regResp.Status != 0 || regResp.Data.Actkn == "" {
-		return fmt.Errorf("refresh failed code=%s msg=%s (body: %s)",
-			regResp.Code, regResp.Msg, truncateStr(string(respBody), 500))
+		// Provide detailed error messages similar to DeepSeek's approach
+		errorMsg := fmt.Sprintf("code=%s msg=%s", regResp.Code, regResp.Msg)
+		
+		// Check for common authentication error patterns
+		msgLower := strings.ToLower(regResp.Msg)
+		if strings.Contains(msgLower, "ticket") || strings.Contains(msgLower, "invalid") {
+			if strings.Contains(msgLower, "expir") {
+				errorMsg = fmt.Sprintf("Qwen ticket expired: code=%s msg=%s", regResp.Code, regResp.Msg)
+			} else if strings.Contains(msgLower, "wrong") || strings.Contains(msgLower, "incorrect") {
+				errorMsg = fmt.Sprintf("Qwen ticket invalid: code=%s msg=%s", regResp.Code, regResp.Msg)
+			} else {
+				errorMsg = fmt.Sprintf("Qwen authentication failed: code=%s msg=%s", regResp.Code, regResp.Msg)
+			}
+		} else if strings.Contains(msgLower, "security") || strings.Contains(msgLower, "risk") {
+			errorMsg = fmt.Sprintf("Qwen security validation failed: code=%s msg=%s", regResp.Code, regResp.Msg)
+		}
+		
+		return fmt.Errorf("refresh failed: %s (body: %s)", errorMsg, truncateStr(string(respBody), 500))
 	}
 
 	d := regResp.Data

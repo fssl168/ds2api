@@ -112,7 +112,7 @@ func formatIncrementalStreamToolCallDeltas(deltas []toolCallDelta, ids map[int]s
 	return out
 }
 
-func filterIncrementalToolCallDeltasByAllowed(deltas []toolCallDelta, allowedNames []string, seenNames map[int]string) []toolCallDelta {
+func filterIncrementalToolCallDeltasByAllowed(deltas []toolCallDelta, _ []string, seenNames map[int]string) []toolCallDelta {
 	if len(deltas) == 0 {
 		return nil
 	}

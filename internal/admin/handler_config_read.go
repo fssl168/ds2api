@@ -10,6 +10,7 @@ func (h *Handler) getConfig(w http.ResponseWriter, _ *http.Request) {
 	safe := map[string]any{
 		"keys":                  snap.Keys,
 		"accounts":              []map[string]any{},
+		"qwen_accounts":         []map[string]any{},
 		"env_backed":            h.Store.IsEnvBacked(),
 		"env_source_present":    h.Store.HasEnvConfigSource(),
 		"env_writeback_enabled": h.Store.IsEnvWritebackEnabled(),
@@ -42,6 +43,36 @@ func (h *Handler) getConfig(w http.ResponseWriter, _ *http.Request) {
 		})
 	}
 	safe["accounts"] = accounts
+
+	// Add Qwen accounts
+	qwenAccounts := make([]map[string]any, 0, len(snap.QwenAccounts))
+	for _, acc := range snap.QwenAccounts {
+		ticket := strings.TrimSpace(acc.Ticket)
+		preview := ""
+		if ticket != "" {
+			if len(ticket) > 20 {
+				preview = ticket[:20] + "..."
+			} else {
+				preview = ticket
+			}
+		}
+		// Use label as identifier, or ticket preview
+		identifier := strings.TrimSpace(acc.Label)
+		if identifier == "" {
+			identifier = preview
+			if identifier == "" {
+				identifier = "(no ticket)"
+			}
+		}
+		qwenAccounts = append(qwenAccounts, map[string]any{
+			"identifier":     identifier,
+			"label":          acc.Label,
+			"has_ticket":     ticket != "",
+			"ticket_preview": preview,
+		})
+	}
+	safe["qwen_accounts"] = qwenAccounts
+
 	writeJSON(w, http.StatusOK, safe)
 }
 

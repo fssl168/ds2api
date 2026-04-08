@@ -40,9 +40,21 @@ export function useChatStreamClient({
             const fromErrorString = typeof data?.error === 'string' ? data.error : ''
             const detail = typeof data?.detail === 'string' ? data.detail : ''
             const msg = typeof data?.message === 'string' ? data.message : ''
-            return fromErrorObject || fromErrorString || detail || msg || t('apiTester.requestFailed')
+            // Prioritize error messages with specific keywords
+            const errorMessage = fromErrorObject || fromErrorString || detail || msg || t('apiTester.requestFailed')
+            
+            // Add status code context for better debugging
+            if (res.status === 401) {
+                return `Authentication Error (${res.status}): ${errorMessage}`
+            } else if (res.status === 403) {
+                return `Access Forbidden (${res.status}): ${errorMessage}`
+            } else if (res.status === 503) {
+                return `Service Unavailable (${res.status}): ${errorMessage}`
+            }
+            return errorMessage
         } catch {
-            return raw.length > 240 ? `${raw.slice(0, 240)}...` : raw
+            // If response is not JSON, return the raw text with status code
+            return `HTTP ${res.status}: ${raw.length > 240 ? `${raw.slice(0, 240)}...` : raw}`
         }
     }, [t])
 
@@ -130,6 +142,9 @@ export function useChatStreamClient({
                         }
                     }
                 }
+                
+                setLoading(false)
+                setIsStreaming(false)
             } else {
                 const data = await res.json()
                 setResponse({ success: true, status_code: res.status, ...data })

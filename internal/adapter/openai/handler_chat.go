@@ -179,7 +179,20 @@ func (h *Handler) handleQwenChatRaw(w http.ResponseWriter, r *http.Request, a *a
 	}
 	resp, err := h.QW.CallCompletion(r.Context(), a, payload, pow, qwen.MaxRetryCount)
 	if err != nil {
-		writeOpenAIError(w, http.StatusInternalServerError, "Qwen completion failed: "+err.Error())
+		errMsg := "Qwen completion failed: " + err.Error()
+		if strings.Contains(err.Error(), "auth failed") {
+			if strings.Contains(err.Error(), "401") {
+				writeOpenAIError(w, http.StatusUnauthorized, "Invalid Qwen ticket: authentication failed. Please check your ticket configuration.")
+			} else if strings.Contains(err.Error(), "403") {
+				writeOpenAIError(w, http.StatusForbidden, "Invalid Qwen ticket: access forbidden. Ticket may be expired or invalid.")
+			} else {
+				writeOpenAIError(w, http.StatusUnauthorized, "Invalid Qwen ticket: "+err.Error())
+			}
+		} else if strings.Contains(err.Error(), "pool exhausted") {
+			writeOpenAIError(w, http.StatusServiceUnavailable, "Qwen service busy: no available tickets. Please try again later.")
+		} else {
+			writeOpenAIError(w, http.StatusInternalServerError, errMsg)
+		}
 		return err
 	}
 
@@ -206,7 +219,20 @@ func (h *Handler) handleQwenChat(w http.ResponseWriter, r *http.Request, a *auth
 	}
 	resp, err := h.QW.CallCompletion(r.Context(), a, payload, pow, qwen.MaxRetryCount)
 	if err != nil {
-		writeOpenAIError(w, http.StatusInternalServerError, "Qwen completion failed: "+err.Error())
+		errMsg := "Qwen completion failed: " + err.Error()
+		if strings.Contains(err.Error(), "auth failed") {
+			if strings.Contains(err.Error(), "401") {
+				writeOpenAIError(w, http.StatusUnauthorized, "Invalid Qwen ticket: authentication failed. Please check your ticket configuration.")
+			} else if strings.Contains(err.Error(), "403") {
+				writeOpenAIError(w, http.StatusForbidden, "Invalid Qwen ticket: access forbidden. Ticket may be expired or invalid.")
+			} else {
+				writeOpenAIError(w, http.StatusUnauthorized, "Invalid Qwen ticket: "+err.Error())
+			}
+		} else if strings.Contains(err.Error(), "pool exhausted") {
+			writeOpenAIError(w, http.StatusServiceUnavailable, "Qwen service busy: no available tickets. Please try again later.")
+		} else {
+			writeOpenAIError(w, http.StatusInternalServerError, errMsg)
+		}
 		return
 	}
 
@@ -218,7 +244,7 @@ func (h *Handler) handleQwenChat(w http.ResponseWriter, r *http.Request, a *auth
 	h.handleQwenNonStream(w, r.Context(), resp, completionID, stdReq.ResponseModel, stdReq.FinalPrompt)
 }
 
-func (h *Handler) handleQwenNonStream(w http.ResponseWriter, ctx context.Context, resp *http.Response, completionID, model, finalPrompt string) {
+func (h *Handler) handleQwenNonStream(w http.ResponseWriter, _ context.Context, resp *http.Response, completionID, model, finalPrompt string) {
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
@@ -231,7 +257,7 @@ func (h *Handler) handleQwenNonStream(w http.ResponseWriter, ctx context.Context
 	writeJSON(w, http.StatusOK, respBody)
 }
 
-func (h *Handler) handleQwenStream(w http.ResponseWriter, r *http.Request, resp *http.Response, completionID, model, finalPrompt string) {
+func (h *Handler) handleQwenStream(w http.ResponseWriter, _ *http.Request, resp *http.Response, completionID, model, _ string) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

@@ -64,7 +64,15 @@ export default function ChatPanel({
                             )}
 
                             <div className="text-sm leading-7 text-foreground whitespace-pre-wrap">
-                                {streamingContent || response?.choices?.[0]?.message?.content || (response?.error && <span className="text-destructive font-medium">{response.error}</span>) || (loading && <span className="text-muted-foreground italic">{t('apiTester.generating')}</span>)}
+                                {response?.error ? (
+                                    <span className="text-destructive font-medium">{response.error}</span>
+                                ) : streamingContent ? (
+                                    streamingContent
+                                ) : response?.choices?.[0]?.message?.content ? (
+                                    response.choices[0].message.content
+                                ) : loading ? (
+                                    <span className="text-muted-foreground italic">{t('apiTester.generating')}</span>
+                                ) : null}
                                 {isStreaming && <span className="inline-block w-1.5 h-4 bg-primary ml-1 align-middle animate-pulse" />}
                             </div>
                         </div>
