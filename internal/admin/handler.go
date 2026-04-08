@@ -48,5 +48,6 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		pr.Delete("/dev/captures", h.clearDevCaptures)
 		pr.Get("/version", h.getVersion)
 		pr.Get("/audit-log", h.listAuditLog)
+		pr.Get("/session-logs", h.listSessionLogs)
 	})
 }

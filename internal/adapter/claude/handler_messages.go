@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"ds2api/internal/admin"
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	claudefmt "ds2api/internal/format/claude"
 	"ds2api/internal/sse"
 	streamengine "ds2api/internal/stream"
+	"ds2api/internal/util"
 )
 
 func (h *Handler) Messages(w http.ResponseWriter, r *http.Request) {
@@ -36,8 +38,26 @@ func (h *Handler) Messages(w http.ResponseWriter, r *http.Request) {
 		writeClaudeError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
+	rawModel, _ := req["model"].(string)
+	stream := false
+	if v, ok := req["stream"]; ok {
+		stream = util.ToBool(v)
+	}
+	startTime := time.Now()
+	var sessionErr error
+	var sessionStatus admin.SessionStatus = admin.SessionSuccess
+	defer func() {
+		latency := time.Since(startTime).Milliseconds()
+		errMsg := ""
+		if sessionErr != nil {
+			errMsg = sessionErr.Error()
+			sessionStatus = admin.SessionError
+		}
+		admin.SessionLogAppend(rawModel, "claude", a.CallerID, 0, stream, sessionStatus, latency, r, errMsg)
+	}()
 	norm, err := normalizeClaudeRequest(h.Store, req)
 	if err != nil {
+		sessionErr = err
 		writeClaudeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -45,23 +65,27 @@ func (h *Handler) Messages(w http.ResponseWriter, r *http.Request) {
 
 	sessionID, err := h.DS.CreateSession(r.Context(), a, 3)
 	if err != nil {
+		sessionErr = err
 		writeClaudeError(w, http.StatusUnauthorized, "invalid token.")
 		return
 	}
 	pow, err := h.DS.GetPow(r.Context(), a, 3)
 	if err != nil {
+		sessionErr = err
 		writeClaudeError(w, http.StatusUnauthorized, "Failed to get PoW")
 		return
 	}
 	requestPayload := stdReq.CompletionPayload(sessionID)
 	resp, err := h.DS.CallCompletion(r.Context(), a, requestPayload, pow, 3)
 	if err != nil {
+		sessionErr = err
 		writeClaudeError(w, http.StatusInternalServerError, "Failed to get Claude response.")
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
+		sessionErr = fmt.Errorf("upstream status %d", resp.StatusCode)
 		writeClaudeError(w, http.StatusInternalServerError, string(body))
 		return
 	}

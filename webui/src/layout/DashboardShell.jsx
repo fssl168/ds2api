@@ -9,7 +9,8 @@ import {
     X,
     Server,
     Users,
-    Shield
+    Shield,
+    History
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -19,6 +20,7 @@ import BatchImport from '../components/BatchImport'
 import VercelSyncContainer from '../features/vercel/VercelSyncContainer'
 import SettingsContainer from '../features/settings/SettingsContainer'
 import AuditLogContainer from '../features/audit/AuditLogContainer'
+import SessionLogContainer from '../features/session/SessionLogContainer'
 import LanguageToggle from '../components/LanguageToggle'
 import { useI18n } from '../i18n'
 
@@ -34,6 +36,7 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
         { id: 'vercel', label: t('nav.vercel.label'), icon: Cloud, description: t('nav.vercel.desc') },
         { id: 'settings', label: t('nav.settings.label'), icon: SettingsIcon, description: t('nav.settings.desc') },
         { id: 'audit', label: t('nav.audit.label'), icon: Shield, description: t('nav.audit.desc') },
+        { id: 'sessions', label: t('nav.sessions.label'), icon: History, description: t('nav.sessions.desc') },
     ]
 
     const authFetch = useCallback(async (url, options = {}) => {
@@ -87,6 +90,8 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
                 return <SettingsContainer onRefresh={fetchConfig} onMessage={showMessage} authFetch={authFetch} onForceLogout={onForceLogout} isVercel={isVercel} />
             case 'audit':
                 return <AuditLogContainer authFetch={authFetch} onMessage={showMessage} />
+            case 'sessions':
+                return <SessionLogContainer authFetch={authFetch} onMessage={showMessage} />
             default:
                 return null
         }

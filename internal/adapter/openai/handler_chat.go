@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"ds2api/internal/admin"
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 	openaifmt "ds2api/internal/format/openai"
@@ -70,6 +72,25 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	r = r.WithContext(auth.WithAuth(r.Context(), a))
 
+	msgsRaw := extractMessagesFromRequest(req)
+	stream := util.ToBool(req["stream"])
+	engineType := "deepseek"
+	if useQwen {
+		engineType = "qwen"
+	}
+	startTime := time.Now()
+	var sessionErr error
+	var sessionStatus admin.SessionStatus = admin.SessionSuccess
+	defer func() {
+		latency := time.Since(startTime).Milliseconds()
+		errMsg := ""
+		if sessionErr != nil {
+			errMsg = sessionErr.Error()
+			sessionStatus = admin.SessionError
+		}
+		admin.SessionLogAppend(rawModel, engineType, a.CallerID, len(msgsRaw), stream, sessionStatus, latency, r, errMsg)
+	}()
+
 	if limits.Enabled {
 		msgsRaw := extractMessagesFromRequest(req)
 		maxTok := 0
@@ -93,22 +114,25 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if useQwen && h.QW == nil {
+		sessionErr = fmt.Errorf("qwen backend not configured")
 		writeOpenAIError(w, http.StatusServiceUnavailable, "Qwen backend not configured. Add qwen_accounts to config.json.")
 		return
 	}
 	if useQwen {
-		h.handleQwenChatRaw(w, r, a, req)
+		sessionErr = h.handleQwenChatRaw(w, r, a, req)
 		return
 	}
 
 	stdReq, err := normalizeOpenAIChatRequest(h.Store, req, requestTraceID(r))
 	if err != nil {
+		sessionErr = err
 		writeOpenAIError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	sessionID, err := h.DS.CreateSession(r.Context(), a, 3)
 	if err != nil {
+		sessionErr = err
 		if a.UseConfigToken {
 			writeOpenAIError(w, http.StatusUnauthorized, "Account token is invalid. Please re-login the account in admin.")
 		} else {
@@ -118,12 +142,14 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 	pow, err := h.DS.GetPow(r.Context(), a, 3)
 	if err != nil {
+		sessionErr = err
 		writeOpenAIError(w, http.StatusUnauthorized, "Failed to get PoW (invalid token or unknown error).")
 		return
 	}
 	payload := stdReq.CompletionPayload(sessionID)
 	resp, err := h.DS.CallCompletion(r.Context(), a, payload, pow, 3)
 	if err != nil {
+		sessionErr = err
 		writeOpenAIError(w, http.StatusInternalServerError, "Failed to get completion.")
 		return
 	}
@@ -134,7 +160,7 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	h.handleNonStream(w, r.Context(), resp, sessionID, stdReq.ResponseModel, stdReq.FinalPrompt, stdReq.Thinking, stdReq.ToolNames)
 }
 
-func (h *Handler) handleQwenChatRaw(w http.ResponseWriter, r *http.Request, a *auth.RequestAuth, req map[string]any) {
+func (h *Handler) handleQwenChatRaw(w http.ResponseWriter, r *http.Request, a *auth.RequestAuth, req map[string]any) error {
 	messagesRaw := extractMessagesFromRequest(req)
 
 	sessionID, _ := h.QW.CreateSession(r.Context(), a, 3)
@@ -154,16 +180,17 @@ func (h *Handler) handleQwenChatRaw(w http.ResponseWriter, r *http.Request, a *a
 	resp, err := h.QW.CallCompletion(r.Context(), a, payload, pow, qwen.MaxRetryCount)
 	if err != nil {
 		writeOpenAIError(w, http.StatusInternalServerError, "Qwen completion failed: "+err.Error())
-		return
+		return err
 	}
 
 	stream := util.ToBool(req["stream"])
 	completionID := "qwenchatcmpl-" + strings.ReplaceAll(uuid.New().String(), "-", "")[:24]
 	if stream {
 		h.handleQwenStream(w, r, resp, completionID, rawModel, "")
-		return
+		return nil
 	}
 	h.handleQwenNonStream(w, r.Context(), resp, completionID, rawModel, "")
+	return nil
 }
 
 func (h *Handler) handleQwenChat(w http.ResponseWriter, r *http.Request, a *auth.RequestAuth, stdReq util.StandardRequest) {

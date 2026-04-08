@@ -28,6 +28,10 @@
         "audit": {
             "label": "Audit Log",
             "desc": "View recent administrative operation records"
+        },
+        "sessions": {
+            "label": "Session Logs",
+            "desc": "View all engine API request records"
         }
     },
     "sidebar": {

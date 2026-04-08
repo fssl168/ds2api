@@ -2,12 +2,15 @@ package gemini
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"ds2api/internal/admin"
 	"ds2api/internal/auth"
 	"ds2api/internal/sse"
 	"ds2api/internal/util"
@@ -26,21 +29,37 @@ func (h *Handler) handleGenerateContent(w http.ResponseWriter, r *http.Request, 
 	}
 	defer h.Auth.Release(a)
 
+	routeModel := strings.TrimSpace(chi.URLParam(r, "model"))
+	startTime := time.Now()
+	var sessionErr error
+	var sessionStatus admin.SessionStatus = admin.SessionSuccess
+	defer func() {
+		latency := time.Since(startTime).Milliseconds()
+		errMsg := ""
+		if sessionErr != nil {
+			errMsg = sessionErr.Error()
+			sessionStatus = admin.SessionError
+		}
+		admin.SessionLogAppend(routeModel, "gemini", a.CallerID, 0, stream, sessionStatus, latency, r, errMsg)
+	}()
+
 	var req map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		sessionErr = fmt.Errorf("invalid json")
 		writeGeminiError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
 
-	routeModel := strings.TrimSpace(chi.URLParam(r, "model"))
 	stdReq, err := normalizeGeminiRequest(h.Store, routeModel, req, stream)
 	if err != nil {
+		sessionErr = err
 		writeGeminiError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	sessionID, err := h.DS.CreateSession(r.Context(), a, 3)
 	if err != nil {
+		sessionErr = err
 		if a.UseConfigToken {
 			writeGeminiError(w, http.StatusUnauthorized, "Account token is invalid. Please re-login the account in admin.")
 		} else {
@@ -50,12 +69,14 @@ func (h *Handler) handleGenerateContent(w http.ResponseWriter, r *http.Request, 
 	}
 	pow, err := h.DS.GetPow(r.Context(), a, 3)
 	if err != nil {
+		sessionErr = err
 		writeGeminiError(w, http.StatusUnauthorized, "Failed to get PoW (invalid token or unknown error).")
 		return
 	}
 	payload := stdReq.CompletionPayload(sessionID)
 	resp, err := h.DS.CallCompletion(r.Context(), a, payload, pow, 3)
 	if err != nil {
+		sessionErr = err
 		writeGeminiError(w, http.StatusInternalServerError, "Failed to get completion.")
 		return
 	}

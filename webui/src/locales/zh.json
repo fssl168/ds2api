@@ -28,6 +28,10 @@
         "audit": {
             "label": "审计日志",
             "desc": "查看最近的管理操作记录"
+        },
+        "sessions": {
+            "label": "会话记录",
+            "desc": "查看所有引擎的 API 请求记录"
         }
     },
     "sidebar": {
