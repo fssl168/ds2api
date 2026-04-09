@@ -60,15 +60,34 @@ export function useAccountsData({ apiFetch }) {
         }
     }
 
+    const [qwenQueueStatus, setQwenQueueStatus] = useState(null)
+
+    const fetchQwenQueueStatus = async () => {
+        try {
+            const res = await apiFetch('/admin/qwen-pool/status')
+            if (res.ok) {
+                const data = await res.json()
+                setQwenQueueStatus(data)
+            }
+        } catch (e) {
+            console.error('Failed to fetch Qwen queue status:', e)
+        }
+    }
+
     useEffect(() => {
         fetchAccounts()
         fetchQueueStatus()
-        const interval = setInterval(fetchQueueStatus, 5000)
+        fetchQwenQueueStatus()
+        const interval = setInterval(() => {
+            fetchQueueStatus()
+            fetchQwenQueueStatus()
+        }, 5000)
         return () => clearInterval(interval)
     }, [])
 
     return {
         queueStatus,
+        qwenQueueStatus,
         keysExpanded,
         setKeysExpanded,
         accounts,

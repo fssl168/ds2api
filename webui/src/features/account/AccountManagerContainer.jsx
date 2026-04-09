@@ -16,6 +16,7 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
 
     const {
         queueStatus,
+        qwenQueueStatus,
         keysExpanded,
         setKeysExpanded,
         accounts,
@@ -148,7 +149,7 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 </div>
             )}
 
-            <QueueCards queueStatus={queueStatus} t={t} />
+            <QueueCards queueStatus={queueStatus} qwenQueueStatus={qwenQueueStatus} t={t} />
 
             <ApiKeysPanel
                 t={t}
